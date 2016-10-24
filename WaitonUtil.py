@@ -7,7 +7,8 @@ Only really kept separate for neatness sake.
 """
 
 #ID of waiton sheet on drive
-WAITON_SHEET_ID = "1J3WDe-OI7YjtDv6mMlM1PN3UlfZo8_y9GBVNBEPwOhE"
+#WAITON_SHEET_ID = "1J3WDe-OI7YjtDv6mMlM1PN3UlfZo8_y9GBVNBEPwOhE" #A term 2016
+WAITON_SHEET_ID = "1I4keh9cIt0x-WwZAdnBsZefSZV-tMIAy37r2NLUOLh4" #First week b term
 
 
 
