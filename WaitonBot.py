@@ -3,6 +3,7 @@ from slackclient import SlackClient#Obvious
 from SlackUtil import *
 
 from WaitonUtil import handleWaitonMsg #For waitons
+from ScrollUtil import handleScrollMsg #For scrolls
 
 #Read api token from file
 apifile = open("apitoken.txt", 'r')
@@ -71,7 +72,7 @@ def main():
             handleWaitonMsg(slack, sheet_service, msg, user, for_user)
 
         elif "scroll" in text:
-            handleScrollMsg(slack, sheet_service, msg)
+            handleScrollMsg(slack, msg)
 
         elif "housejob" in text:
             reply(slack, msg, "I cannot do that (yet)", username="sadbot")
