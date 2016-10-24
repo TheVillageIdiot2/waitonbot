@@ -5,6 +5,8 @@ from SlackUtil import *
 from WaitonUtil import handleWaitonMsg #For waitons
 from ScrollUtil import handleScrollMsg #For scrolls
 
+import re
+
 #Read api token from file
 apifile = open("apitoken.txt", 'r')
 SLACK_API = next(apifile).strip()
@@ -39,6 +41,10 @@ def handleProfilelessScum(slack, msg, user, for_user=None):
         f_response = "Set up your profile before talking to me, scum.\n\nThat is to say, fill out your first and last name in your slack user profile! Please use what would be on the waiton list (IE your proper name, not a nickname)."
     reply(slack, msg, f_response)
     
+
+waiton_pattern = re.compile("^waiton")
+scroll_pattern = re.compile("^scroll")
+housejob_pattern = re.compile("^(house)?job")
        
 def main():
     #Init slack
@@ -68,13 +74,13 @@ def main():
         elif for_user and not isValidProfile(for_user):#invalid for_user profile
             handleProfilelessScum(slack, msg, user, for_user)
 
-        elif "waiton" in text:
+        elif waiton_pattern.match(text):
             handleWaitonMsg(slack, sheet_service, msg, user, for_user)
 
-        elif "scroll" in text:
+        elif scroll_pattern.match(text):
             handleScrollMsg(slack, msg)
 
-        elif "housejob" in text:
+        elif housejob_pattern.match(text):
             reply(slack, msg, "I cannot do that (yet)", username="sadbot")
 
         elif killswitch == msg['text'].lower():
