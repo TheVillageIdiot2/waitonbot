@@ -2,3 +2,4 @@ apitoken.txt
 killswitch.txt
 client_secret.json
 *.pyc
+*.swp
