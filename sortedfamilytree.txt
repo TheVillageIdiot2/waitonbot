@@ -723,3 +723,26 @@
 1008: Andrew Brunelle
 1009: Ziyang "Gavin" Yu
 1010: Tucker Martin
+1011: Tejas Rao
+1012: Matthew Collins
+1014: Andrew Gregory
+1015: John Bonina
+1016: Sean McCluskey
+1017: Jacob Rems
+1018: James McAleese
+1019: Jacob Henry
+1020: James Taylor
+1021: Ryan St. Hilaire
+1022: Jimmy Tran
+1024: Brent Reissman
+1025: David Cadilek
+1026: James Owens
+1027: Diego Infanzon
+1028: Trevor Alexander
+1029: Nikolas Gamarra
+1040: Ryan O'Brien
+1041: Chenggu Wang
+1041: Johnny Wang
+1042: Howard Vance
+1044: Evan Hasenfeld
+1045: Kien Nhan
