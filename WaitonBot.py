@@ -70,17 +70,23 @@ def main():
         #Handle Message
         text = msg['text'].lower()
         if not isValidProfile(user):#invalid profile
+            print("Received profileless")
             handleProfilelessScum(slack, msg, user)  
+
         elif for_user and not isValidProfile(for_user):#invalid for_user profile
+            print("Received for profileless")
             handleProfilelessScum(slack, msg, user, for_user)
 
         elif waiton_pattern.match(text):
+            print("Received waiton from " + user['user']['name'])
             handleWaitonMsg(slack, sheet_service, msg, user, for_user)
 
         elif scroll_pattern.match(text):
+            print("Received scroll from " + user['user']['name'])
             handleScrollMsg(slack, msg)
 
         elif housejob_pattern.match(text):
+            print("Received housejob from " + user['user']['name'])
             reply(slack, msg, "I cannot do that (yet)", username="sadbot")
 
         elif killswitch == msg['text'].lower():

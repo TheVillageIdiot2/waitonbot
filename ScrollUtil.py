@@ -37,14 +37,14 @@ def handleScrollMsg(slack, msg):
     if not m:
         response = "Could not parse your query. Please invoke as \"scroll <name>\" or \"scroll <scroll#>\""
     else:
-        response = getResponseByQuery()
+        response = getResponseByQuery(m.group(1))
 
     reply(slack, msg, response, username="scrollbot")
   
 def getResponseByQuery(query):
     try:
         #Try get scroll number
-        scroll = int(m.group(1).strip())
+        scroll = int(query)
         b = findBrotherByScroll(scroll)
 
         if b:
@@ -53,7 +53,7 @@ def getResponseByQuery(query):
             return "Could not find scroll {0}".format(scroll)
     except ValueError:
         #Use as name
-        name = m.group(1).strip()
+        name = query
         b = findBrotherByName(name)
 
         if b:
@@ -77,5 +77,5 @@ def findBrotherByName(name):
     """
 
     #Do fuzzy match
-    return process.extractOne(name, brothers, processor=lambda b: b["name"])
+    return process.extractOne(name, brothers, processor=lambda b: b["name"])[0]
     
