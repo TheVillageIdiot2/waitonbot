@@ -5,6 +5,8 @@ Only really kept separate for neatness sake.
 
 import re
 from SlackUtil import reply
+from fuzzywuzzy import fuzz
+from fuzzywuzzy import process
 
 
 #load the family tree
@@ -35,30 +37,45 @@ def handleScrollMsg(slack, msg):
     if not m:
         response = "Could not parse your query. Please invoke as \"scroll <name>\" or \"scroll <scroll#>\""
     else:
-        #Initially try to parse numeric
-        try:
-            #Try get scroll
-            scroll = int(m.group(1).strip())
-
-            for b in brothers:
-                if b["scroll"] == scroll:
-                    response = "Brother {0} has scroll {1}".format(b["name"], b["scroll"])
-                    break
-
-            #If response still none, say so
-            response = response or "Could not find scroll {0}".format(scroll)
-
-        except ValueError:
-            #Use as name
-            name = m.group(1).strip()
-
-            for b in brothers:
-                if name in b["name"]:
-                    response = "Brother {0} has scroll {1}".format(b["name"], b["scroll"])
-                    break
-
-            #If response still none, say so
-            response = response or "Could not find brother {0}".format(name)
+        response = getResponseByQuery()
 
     reply(slack, msg, response, username="scrollbot")
   
+def getResponseByQuery(query):
+    try:
+        #Try get scroll number
+        scroll = int(m.group(1).strip())
+        b = findBrotherByScroll(scroll)
+
+        if b:
+            return "Brother {0} has scroll {1}".format(b["name"], b["scroll"])
+        else:
+            return "Could not find scroll {0}".format(scroll)
+    except ValueError:
+        #Use as name
+        name = m.group(1).strip()
+        b = findBrotherByName(name)
+
+        if b:
+            return "Best match:\nBrother {0} has scroll {1}".format(b["name"], b["scroll"])
+        else:
+            return "Could not find brother {0}".format(name)
+            
+
+def findBrotherByScroll(scroll):
+    for b in brothers:
+        if b["scroll"] == scroll:
+            return b
+    return None
+
+def findBrotherByName(name):
+    #Try direct lookup
+    """
+    for b in brothers:
+        if name.toLower() in b["name"].toLower():
+            return b
+    """
+
+    #Do fuzzy match
+    return process.extractOne(name, brothers, processor=lambda b: b["name"])
+    
