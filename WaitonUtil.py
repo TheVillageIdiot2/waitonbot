@@ -9,7 +9,7 @@ Only really kept separate for neatness sake.
 #ID of waiton sheet on drive
 #WAITON_SHEET_ID = "1J3WDe-OI7YjtDv6mMlM1PN3UlfZo8_y9GBVNBEPwOhE" #A term 2016
 #WAITON_SHEET_ID = "1I4keh9cIt0x-WwZAdnBsZefSZV-tMIAy37r2NLUOLh4" #First week b term
-WAITON_SHEED_ID =  "1jnLXo_QhZWId84gAVC3rzzo26HmTo_cs2FqviyU6_mw" #All of b term
+WAITON_SHEET_ID =  "1jnLXo_QhZWId84gAVC3rzzo26HmTo_cs2FqviyU6_mw" #All of b term
 
 
 
@@ -55,7 +55,7 @@ def getWaitons(sheet_service):
         curr_meal = None
         for row in values:
             #Update curr meal:
-            if row[1] != "":
+            if row[1] != "" and row[1] not in ["starts at 4:30p", "Midnight"]:
                 curr_meal = row[1]
             
             if curr_meal is not None:
