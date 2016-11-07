@@ -33,6 +33,7 @@
 47: Ray W. Spalding
 48: John A. Giordano
 49: Capt. Michael Hughes
+50: Robert N Ahern
 51: Dr. Patric V. Romano
 52: Kenneth R. Perkins
 54: David L. Titterington, Jr.
@@ -436,6 +437,7 @@
 652: Sam Girgis
 654: Larry Ryan Coffren
 655: David Silva
+656: Brian Felouzis
 657: Brendan Casey
 658: Thomas Collins
 659: Andy Kern
@@ -605,10 +607,12 @@
 862: Chris Szlatenyi
 864: Patrick Benson
 865: Charlie Fancher
+866: Nathan Webb
 867: Dylan Sweeney
 868: Greg Walls
 869: Jarrett Arredondo
 870: Pat DeSantis
+871: Alan Lazaros
 872: Udit Adhikari
 874: Alex Muir
 875: Eric Murphy
