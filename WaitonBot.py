@@ -4,6 +4,7 @@ from SlackUtil import *
 
 from WaitonUtil import handleWaitonMsg #For waitons
 from ScrollUtil import handleScrollMsg #For scrolls
+from TrueScrollUtil import handleTrueScrollMsg #For true scrolls
 
 import re
 
@@ -44,6 +45,7 @@ def handleProfilelessScum(slack, msg, user, for_user=None):
 
 waiton_pattern = re.compile("^waiton")
 scroll_pattern = re.compile("^scroll")
+true_scroll_pattern = re.compile("^truescroll")
 housejob_pattern = re.compile("^(house)?job")
        
 def main():
@@ -69,6 +71,7 @@ def main():
         
         #Handle Message
         text = msg['text'].lower()
+        msg['text'] = text
         if not isValidProfile(user):#invalid profile
             print("Received profileless")
             handleProfilelessScum(slack, msg, user)  
@@ -84,6 +87,10 @@ def main():
         elif scroll_pattern.match(text):
             print("Received scroll from " + user['user']['name'])
             handleScrollMsg(slack, msg)
+
+        elif true_scroll_pattern.match(text):
+            print("Received true scroll from " + user['user']['name'])
+            handleTrueScrollMsg(slack, msg)
 
         elif housejob_pattern.match(text):
             print("Received housejob from " + user['user']['name'])
