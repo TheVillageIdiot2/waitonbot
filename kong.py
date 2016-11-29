@@ -7,8 +7,8 @@ DEFAULT_SONG = "dk_rap_classic"
 
 #Patterns
 patterns = {}
-patterns['start'] = re.compile(r"#STARTSONG\a+(.*?)")
-patterns['time'] = re.compile(r"#TIMEPERLINE\a+(\d*)")
+patterns['start'] = re.compile(r"#STARTSONG\s+(.*?)$")
+patterns['time'] = re.compile(r"#TIMEPERLINE\s+(\d*)$")
 patterns['rest'] = re.compile(r"#REST")
 patterns['end'] = re.compile(r"#ENDSONG")
 
@@ -21,27 +21,27 @@ f.close()
 
 
 class SongThread(threading.Thread):
-    def __init__(this, replycallback, song_name):
-        this.slack = slack
-        this.song_name = song_name
-        this.song_lines = song_lines
-        this.delay = 1000
-        this.daemon = True
+    def __init__(self, callback, song_name):
+        super().__init__()
+        self.song_name = song_name
+        self.callback = callback
+        self.delay = 1000
+        self.daemon = True
         
-        
-    def run(this):
+    def run(self):
         playing = False
         
         for line in lyric_lines:
-            print(line)
+            line = line.strip()
             if line == "":
                 continue
                
             #Navigate to song start
             if not playing:
                 m = patterns['start'].match(line)
+                print(line)
                 if m:
-                    if m.group(1) == this.song_name:
+                    if m.group(1) == self.song_name:
                         playing = True
                         continue
             
@@ -50,13 +50,13 @@ class SongThread(threading.Thread):
                 #Config
                 m = patterns['time'].match(line)
                 if m:
-                    this.delay = int(m.group(1))
+                    self.delay = int(m.group(1))
                     continue
 
                 #Rest line
                 m = patterns['rest'].match(line)
                 if m:
-                    sleep(this.delay / 1000)
+                    sleep(self.delay / 1000)
                     continue
 
                 #End song
@@ -65,11 +65,11 @@ class SongThread(threading.Thread):
                     return
                     
                 #"sing" line
-                replycallback(line)
-                sleep(this.delay / 1000)
+                self.callback(line)
+                sleep(self.delay / 1000)
                 
         if not playing:
-            replycallback("Could not find song")
+            self.callback("Could not find song")
             
 def getAllTitles():
     titles = []
@@ -80,7 +80,7 @@ def getAllTitles():
             
     return titles
             
-request_pattern = re.compile("kong (.*?)$")
+request_pattern = re.compile(r"kong\s*(.*?)$")
  
 def handleKongMsg(slack, msg):
     #Get text
