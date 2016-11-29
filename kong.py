@@ -4,6 +4,7 @@ from SlackUtil import reply
 from time import sleep
 
 DEFAULT_SONG = "dk_rap_classic"
+DEFAULT_DELAY = 2000
 
 #Patterns
 patterns = {}
@@ -25,7 +26,7 @@ class SongThread(threading.Thread):
         super().__init__()
         self.song_name = song_name
         self.callback = callback
-        self.delay = 1000
+        self.delay = DEFAULT_DELAY
         self.daemon = True
         
     def run(self):

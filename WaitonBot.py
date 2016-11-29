@@ -47,7 +47,7 @@ waiton_pattern = re.compile("^waiton")
 scroll_pattern = re.compile("^scroll")
 true_scroll_pattern = re.compile("^truescroll")
 housejob_pattern = re.compile("^(house)?job")
-kong_pattern = re.compile("")
+kong_pattern = re.compile("^kong")
        
 def main():
     #Init slack
