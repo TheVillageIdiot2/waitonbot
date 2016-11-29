@@ -6,8 +6,8 @@
 while :
 do
   echo "Press [CTRL+C] to stop..."
-  sleep 5
-  python3 WaitonBot.py
   sleep 1
+  python3 WaitonBot.py
+  sleep 3
   python3 CallOfTheVoid.py
 done
