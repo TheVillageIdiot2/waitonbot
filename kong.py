@@ -97,7 +97,7 @@ def handleKongMsg(slack, msg):
             reply_callback(response)
          
         elif match.group(1) != "":
-            st = SongThread(reply_callback, m.group(1))
+            st = SongThread(reply_callback, match.group(1))
             st.start()
         else:
             st = SongThread(reply_callback, DEFAULT_SONG)
