@@ -5,7 +5,7 @@ from SlackUtil import *
 from WaitonUtil import handleWaitonMsg #For waitons
 from ScrollUtil import handleScrollMsg #For scrolls
 from TrueScrollUtil import handleTrueScrollMsg #For true scrolls
-
+from kong import handleKongMsg
 import re
 
 #Read api token from file
@@ -47,6 +47,7 @@ waiton_pattern = re.compile("^waiton")
 scroll_pattern = re.compile("^scroll")
 true_scroll_pattern = re.compile("^truescroll")
 housejob_pattern = re.compile("^(house)?job")
+kong_pattern = re.compile("")
        
 def main():
     #Init slack
@@ -95,6 +96,10 @@ def main():
         elif housejob_pattern.match(text):
             print("Received housejob from " + user['user']['name'])
             reply(slack, msg, "I cannot do that (yet)", username="sadbot")
+            
+        elif kong_pattern.match(text):
+            print("Received kong from " + user['user']['name'])
+            handleKongMsg(slack, msg)
 
         elif killswitch == msg['text'].lower():
             reply(slack, msg, "as you wish...", username="rip bot")
