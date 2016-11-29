@@ -28,7 +28,7 @@ def handleTrueScrollMsg(slack, msg):
 
         #Offset truescroll in opposite direction
         if int(num) > 666:
-            trueScroll -= 1
+            trueScroll = str(int(trueScroll) - 1)
         
         
         #Memes
