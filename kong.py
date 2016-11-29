@@ -38,7 +38,8 @@ class SongThread(threading.Thread):
                
             #Navigate to song start
             if not playing:
-                if m = patterns['start'].match(line):
+                m = patterns['start'].match(line)
+                if m:
                     if m.group(1) == this.song_name:
                         playing = True
                         continue
@@ -46,21 +47,25 @@ class SongThread(threading.Thread):
             #Play loop
             else:
                 #Config
-                if m = patterns['time'].match(line):
+                m = patterns['time'].match(line)
+                if m:
                     this.delay = int(m.group(1))
-                
+                    continue
+
                 #Rest line
-                elif m = patterns['rest'].match(line):
+                m = patterns['rest'].match(line)
+                if m:
                     sleep(this.delay / 1000)
-                  
+                    continue
+
                 #End song
-                elif m = patterns['end'].match(line):
+                m = patterns['end'].match(line)
+                if m:
                     return
                     
                 #"sing" line
-                else:
-                    replycallback(line)
-                    sleep(this.delay / 1000)
+                replycallback(line)
+                sleep(this.delay / 1000)
                 
         if not playing:
             replycallback("Could not find song")
