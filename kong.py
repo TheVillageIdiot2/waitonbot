@@ -68,7 +68,8 @@ class SongThread(threading.Thread):
 def getAllTitles():
     titles = []
     for line in lyric_lines:
-        if m = patterns['start'].match(line):
+        m = patterns['start'].match(line)
+        if m:
             titles += [m.group(1)]
             
     return titles
