@@ -86,10 +86,9 @@ def handleKongMsg(slack, msg):
     text = msg['text']
     match = request_pattern.match(text)
     
+    #Make callback function
+    reply_callback = lambda response: reply(slack, msg, response, username="jukebot")
     if match:
-        #Make callback function
-        reply_callback = lambda response: reply(slack, msg, response, username="jukebot")
-        
         if match.group(1) == "list":
             response = ""
             for title in getAllTitles():
@@ -105,5 +104,6 @@ def handleKongMsg(slack, msg):
     
     else:
         response = "Invoke as kong <songtitle:list>"
+        reply_callback(response)
 
                 
