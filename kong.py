@@ -7,10 +7,10 @@ DEFAULT_SONG = "dk_rap_classic"
 
 #Patterns
 patterns = {}
-patterns['start'] = re.compile("^#STARTSONG (.*?)")
-patterns['time'] = re.compile("^#TIMEPERLINE (\\d*)")
-patterns['rest'] = re.compile("^#REST")
-patterns['end'] = re.compile("^#ENDSONG")
+patterns['start'] = re.compile(r"#STARTSONG\a+(.*?)")
+patterns['time'] = re.compile(r"#TIMEPERLINE\a+(\d*)")
+patterns['rest'] = re.compile(r"#REST")
+patterns['end'] = re.compile(r"#ENDSONG")
 
 #SongContents
 lyric_lines = []
@@ -33,6 +33,7 @@ class SongThread(threading.Thread):
         playing = False
         
         for line in lyric_lines:
+            print(line)
             if line == "":
                 continue
                
@@ -72,9 +73,7 @@ class SongThread(threading.Thread):
             
 def getAllTitles():
     titles = []
-    print(lyric_lines)
     for line in lyric_lines:
-        print(line)
         m = patterns['start'].match(line)
         if m:
             titles += [m.group(1)]
