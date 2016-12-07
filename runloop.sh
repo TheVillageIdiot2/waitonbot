@@ -5,9 +5,11 @@
 
 while :
 do
+  git pull
   echo "Press [CTRL+C] to stop..."
   sleep 1
   python3 WaitonBot.py
   sleep 3
   python3 CallOfTheVoid.py
+  echo "Died. Updating and restarting..."
 done
