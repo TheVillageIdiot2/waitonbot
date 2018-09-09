@@ -5,7 +5,9 @@ from slackclient import SlackClient  # Obvious
 from slack_util import *
 
 import scroll_util
+import identifier
 import re
+import job_nagger
 
 # Read api token from file
 api_file = open("apitoken.txt", 'r')
@@ -17,11 +19,6 @@ kill_switch_file = open("killswitch.txt", 'r')
 kill_switch = next(kill_switch_file).strip()
 kill_switch_file.close()
 
-# Authenticate, get sheets service. Done globally so we dont have to do this
-# every fucking time, which is probably a bad idea
-sheet_credentials = google.get_sheets_credentials()
-sheet_service = google._init_sheets_service(sheet_credentials)
-
 
 def main():
     wrapper = ClientWrapper()
@@ -31,6 +28,15 @@ def main():
 
     # Add scroll handling
     wrapper.add_hook(scroll_util.command_pattern, scroll_util.callback)
+
+    # Add id handling
+    wrapper.add_hook(identifier.check_pattern, identifier.check_callback)
+    wrapper.add_hook(identifier.identify_pattern, identifier.identify_callback)
+    wrapper.add_hook(identifier.identify_other_pattern, identifier.identify_other_callback)
+    wrapper.add_hook(identifier.name_pattern, identifier.name_callback)
+
+    # Add test nagging functionality
+    wrapper.add_hook(job_nagger.nag_pattern, job_nagger.nag_callback)
 
     # Add kill switch
     wrapper.add_hook(kill_switch, die)
@@ -58,6 +64,8 @@ class ClientWrapper(object):
     def listen(self):
         feed = message_stream(self._slack)
         for msg in feed:
+            print(msg)
+
             # We only care about standard messages, not subtypes, as those usually just channel activity
             if msg.get("subtype"):
                 continue

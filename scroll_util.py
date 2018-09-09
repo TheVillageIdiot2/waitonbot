@@ -4,9 +4,10 @@ Only really kept separate for neatness sake.
 """
 
 import re
-from slack_util import reply
-from fuzzywuzzy import fuzz
+
 from fuzzywuzzy import process
+
+from slack_util import reply
 
 # load the family tree
 familyfile = open("sortedfamilytree.txt", 'r')
@@ -22,10 +23,6 @@ brothers = [{
     "scroll": int(m.group(1)),
     "name": m.group(2)
 } for m in brothers]
-
-"""
-Attempts to look up a user by scroll
-"""
 
 
 def callback(slack, msg, match):

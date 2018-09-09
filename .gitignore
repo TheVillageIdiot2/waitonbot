@@ -1,5 +1,9 @@
 apitoken.txt
 killswitch.txt
-client_secret.json
+sheets_credentials.json
+token.json
+*.bak
+*.dat
+*.dir
 *.pyc
 *.swp
