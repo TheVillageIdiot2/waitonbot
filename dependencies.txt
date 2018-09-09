@@ -1,3 +1,4 @@
 slackclient
 python-Levenshtein
 fuzzywuzzy
+httplib2
