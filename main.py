@@ -59,7 +59,7 @@ class ClientWrapper(object):
         self._hooks = OrderedDict()
 
     def add_hook(self, pattern, callback):
-        self._hooks[re.compile(pattern)] = callback
+        self._hooks[pattern] = callback
 
     def listen(self):
         feed = message_stream(self._slack)
@@ -74,7 +74,7 @@ class ClientWrapper(object):
             text = msg['text'].strip()
             success = False
             for regex, callback in self._hooks.items():
-                match = regex.match(text)
+                match = re.match(regex, text, flags=re.IGNORECASE)
                 if match:
                     success = True
                     print("Matched on callback {}".format(callback))
