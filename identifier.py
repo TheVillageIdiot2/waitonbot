@@ -82,7 +82,7 @@ def name_callback(slack, msg, match):
                 result = "The bot thinks your name is {}".format(brother["name"])
             else:
                 result = "The bot couldn't find a name for scroll {}".format(scroll)
-        except ValueError:
+        except (KeyError, ValueError):
             result = NON_REG_MSG
 
         # Respond
