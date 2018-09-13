@@ -58,4 +58,4 @@ def nag_callback(slack, msg, match):
                 response += "{} (scroll not found. Please register for @ notifications!)".format(job.brother_name)
             response += "\n"
 
-    slack_util.reply(slack, msg, response, in_thread=False, to_channel=channel_util.BOTZONE)
+    slack_util.reply(slack, msg, response, in_thread=False, to_channel=channel_util.GENERAL)
