@@ -22,7 +22,7 @@ kill_switch = next(kill_switch_file).strip()
 kill_switch_file.close()
 
 # Enable to use dummy
-DEBUG_MODE = True
+DEBUG_MODE = False
 
 
 def main():
