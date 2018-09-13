@@ -8,6 +8,8 @@ COMMAND_CENTER_ID = "GCR631LQ1"
 SLAVES_TO_THE_MACHINE_ID = "C9WUQBYNP"
 BOTZONE = "C3BF2MFKM"
 
+NOT_ALLOWED_HERE = "There's a time and place for everything, but not here!"
+
 # Define our patterns
 channel_check_pattern = r"channel id\s*(.*)"
 

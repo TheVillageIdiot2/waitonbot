@@ -27,29 +27,31 @@ class Job(object):
 
 
 def nag_callback(slack, msg, match):
-    # Only allow in
+    # Only allow in command center
+    if msg["channel"] != channel_util.COMMAND_CENTER_ID:
+        response = channel_util.NOT_ALLOWED_HERE
+    else:
+        # Get the day
+        day = match.group(1).lower()
 
-    # Get the day
-    day = match.group(1).lower()
+        # Get the spreadsheet section
+        jobs = google_api.get_sheet_range(SHEET_ID, eight_jobs)
+        jobs = jobs + google_api.get_sheet_range(SHEET_ID, fiftythree_jobs)
+        jobs = [Job(r) for r in jobs]
 
-    # Get the spreadsheet section
-    jobs = google_api.get_sheet_range(SHEET_ID, eight_jobs)
-    jobs = jobs + google_api.get_sheet_range(SHEET_ID, fiftythree_jobs)
-    jobs = [Job(r) for r in jobs]
+        # Filter to day
+        jobs = [j for j in jobs if j.day == day]
 
-    # Filter to day
-    jobs = [j for j in jobs if j.day == day]
-
-    # Nag each
-    response = "Do your jobs! They are as follows:\n"
-    for job in jobs:
-        response += "{} -- ".format(job.job_name)
-        ids = job.lookup_brother_slack_id()
-        if ids:
-            for id in ids:
-                response += "<@{}> ".format(id)
-        else:
-            response += "{} (scroll not found. Please register for @ notifications!)".format(job.brother_name)
-        response += "\n"
+        # Nag each
+        response = "Do your jobs! They are as follows:\n"
+        for job in jobs:
+            response += "{} -- ".format(job.job_name)
+            ids = job.lookup_brother_slack_id()
+            if ids:
+                for id in ids:
+                    response += "<@{}> ".format(id)
+            else:
+                response += "{} (scroll not found. Please register for @ notifications!)".format(job.brother_name)
+            response += "\n"
 
     slack_util.reply(slack, msg, response, in_thread=False, to_channel=channel_util.BOTZONE)
