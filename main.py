@@ -70,7 +70,7 @@ class ClientWrapper(object):
             print(msg)
 
             # We only care about standard messages, not subtypes, as those usually just channel activity
-            if msg.get("subtype") not in [None, "message_replied"]:
+            if msg.get("subtype") is not None:
                 continue
 
             # Handle Message
