@@ -1,13 +1,15 @@
-
-import shelve
 import slack_util
 
 DB_NAME = "channel_priveleges"
 
+# Useful channels
+GENERAL = "C0CFHPNEM"
+COMMAND_CENTER_ID = "GCR631LQ1"
+SLAVES_TO_THE_MACHINE_ID = "C9WUQBYNP"
+BOTZONE = "C3BF2MFKM"
+
 # Define our patterns
 channel_check_pattern = r"channel id\s*(.*)"
-# channel_check_pattern = r"channel id <#(.*)>"
-# identify_other_pattern = r"<@(.*)>\s+has scroll\s+(.*)"
 
 
 def channel_check_callback(slack, msg, match):

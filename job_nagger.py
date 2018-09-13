@@ -1,27 +1,55 @@
 import identifier
 import scroll_util
 import slack_util
+import google_api
+import channel_util
 
-nag_pattern = r"nag (.*)"
+nag_pattern = r"nagjobs (tuesday|thursday)"
+
+
+SHEET_ID = "1lPj9GjB00BuIq9GelOWh5GmiGsheLlowPnHLnWBvMOM"
+eight_jobs = "House Jobs!A2:C25" # Format: Job Day Bro
+fiftythree_jobs = "House Jobs!E2:G6"
+
+# For matching purposes
+tuesday = "tuesday"
+thursday = "thursday"
+
+
+class Job(object):
+    def __init__(self, row):
+        self.job_name, self.day, self.brother_name = row
+        self.day = self.day.lower().strip()
+
+    def lookup_brother_slack_id(self):
+        brother_dict = scroll_util.find_by_name(self.brother_name)
+        return identifier.lookup_brother_userids(brother_dict)
 
 
 def nag_callback(slack, msg, match):
-    # Get who we want to nag
-    name = match.group(1)
+    # Only allow in
 
-    # Find them using scroll shit
-    brother = scroll_util.find_by_name(name)
+    # Get the day
+    day = match.group(1).lower()
 
-    # Get the associated user ids
-    ids = identifier.lookup_brother_userids(brother)
+    # Get the spreadsheet section
+    jobs = google_api.get_sheet_range(SHEET_ID, eight_jobs)
+    jobs = jobs + google_api.get_sheet_range(SHEET_ID, fiftythree_jobs)
+    jobs = [Job(r) for r in jobs]
 
-    # Nag them each
-    if ids:
-        result = "Hey"
-        for user_id in ids:
-            result += " <@{}>".format(user_id)
-            result += "!"
-    else:
-        result = "Nobody has identified themselves as {} ({})... Sad!".format(brother["name"], brother["scroll"])
+    # Filter to day
+    jobs = [j for j in jobs if j.day == day]
 
-    slack_util.reply(slack, msg, result, in_thread=False)
+    # Nag each
+    response = "Do your jobs! They are as follows:\n"
+    for job in jobs:
+        response += "{} -- ".format(job.job_name)
+        ids = job.lookup_brother_slack_id()
+        if ids:
+            for id in ids:
+                response += "<@{}> ".format(id)
+        else:
+            response += "{} (scroll not found. Please register for @ notifications!)".format(job.brother_name)
+        response += "\n"
+
+    slack_util.reply(slack, msg, response, in_thread=False, to_channel=channel_util.BOTZONE)

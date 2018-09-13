@@ -5,16 +5,19 @@ Slack helpers. Separated for compartmentalization
 """
 
 
-def reply(slack, msg, text, in_thread=True):
+def reply(slack, msg, text, in_thread=True, to_channel=None):
     """
     Sends message with "text" as its content to the channel that message came from
     """
-    channel = msg['channel']
-    thread_id = msg['ts']
+    # If no channel specified, just do same as msg
+    if to_channel is None:
+        to_channel = msg['channel']
+
+    # Send in a thread by default
     if in_thread:
-        slack.rtm_send_message(channel=channel, message=text, thread=thread_id)
+        slack.rtm_send_message(channel=to_channel, message=text, thread=msg['ts'])
     else:
-        slack.rtm_send_message(channel=channel, message=text)
+        slack.rtm_send_message(channel=to_channel, message=text)
 
 
 def message_stream(slack):

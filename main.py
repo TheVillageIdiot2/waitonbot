@@ -9,6 +9,7 @@ import identifier
 import re
 import channel_util
 import job_nagger
+from dummy import FakeClient
 
 # Read api token from file
 api_file = open("apitoken.txt", 'r')
@@ -39,7 +40,7 @@ def main():
     # Added channel utility
     wrapper.add_hook(channel_util.channel_check_pattern, channel_util.channel_check_callback)
 
-    # Add test nagging functionality
+    # Add nagging functionality
     wrapper.add_hook(job_nagger.nag_pattern, job_nagger.nag_callback)
 
     # Add kill switch
@@ -53,10 +54,16 @@ def die(*args):
     exit()
 
 
+DEBUG_MODE = False
+
+
 class ClientWrapper(object):
     def __init__(self):
         # Init slack
-        self._slack = SlackClient(SLACK_API)
+        if DEBUG_MODE:
+            self._slack = FakeClient()
+        else:
+            self._slack = SlackClient(SLACK_API)
 
         # Hooks go regex -> callback on (slack, msg, match)
         self._hooks = OrderedDict()
@@ -71,6 +78,10 @@ class ClientWrapper(object):
 
             # We only care about standard messages, not subtypes, as those usually just channel activity
             if msg.get("subtype") is not None:
+                continue
+
+            # Never deal with general
+            if msg.get("channel") == channel_util.GENERAL:
                 continue
 
             # Handle Message
