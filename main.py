@@ -7,6 +7,7 @@ from slack_util import *
 import scroll_util
 import identifier
 import re
+import channel_util
 import job_nagger
 
 # Read api token from file
@@ -35,6 +36,9 @@ def main():
     wrapper.add_hook(identifier.identify_other_pattern, identifier.identify_other_callback)
     wrapper.add_hook(identifier.name_pattern, identifier.name_callback)
 
+    # Added channel utility
+    wrapper.add_hook(channel_util.channel_check_pattern, channel_util.channel_check_callback)
+
     # Add test nagging functionality
     wrapper.add_hook(job_nagger.nag_pattern, job_nagger.nag_callback)
 
@@ -53,7 +57,6 @@ class ClientWrapper(object):
     def __init__(self):
         # Init slack
         self._slack = SlackClient(SLACK_API)
-        self._slack.rtm_send_message(channel="@jacob henry", message="I'm back baby!")
 
         # Hooks go regex -> callback on (slack, msg, match)
         self._hooks = OrderedDict()
@@ -67,7 +70,7 @@ class ClientWrapper(object):
             print(msg)
 
             # We only care about standard messages, not subtypes, as those usually just channel activity
-            if msg.get("subtype"):
+            if msg.get("subtype") not in [None, "message_replied"]:
                 continue
 
             # Handle Message
