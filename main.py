@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 import google_api as google  # For read drive
 from slackclient import SlackClient  # Obvious
-from slack_util import *
+import slack_util
 
 import scroll_util
 import identifier
@@ -20,6 +20,9 @@ api_file.close()
 kill_switch_file = open("killswitch.txt", 'r')
 kill_switch = next(kill_switch_file).strip()
 kill_switch_file.close()
+
+# Enable to use dummy
+DEBUG_MODE = True
 
 
 def main():
@@ -46,33 +49,38 @@ def main():
     # Add kill switch
     wrapper.add_hook(kill_switch, die)
 
+    # Add help
+    def list_hooks(slack, msg, match):
+        slack_util.reply(slack, msg, "\n".join(wrapper.hooks.keys()))
+    wrapper.add_hook("bot help", list_hooks)
+
     wrapper.listen()
 
+# Callback to list command hooks
 
+
+# Callback to die
 def die(*args):
     print("Got kill switch")
     exit()
-
-
-DEBUG_MODE = False
 
 
 class ClientWrapper(object):
     def __init__(self):
         # Init slack
         if DEBUG_MODE:
-            self._slack = FakeClient()
+            self.slack = FakeClient()
         else:
-            self._slack = SlackClient(SLACK_API)
+            self.slack = SlackClient(SLACK_API)
 
         # Hooks go regex -> callback on (slack, msg, match)
-        self._hooks = OrderedDict()
+        self.hooks = OrderedDict()
 
     def add_hook(self, pattern, callback):
-        self._hooks[pattern] = callback
+        self.hooks[pattern] = callback
 
     def listen(self):
-        feed = message_stream(self._slack)
+        feed = slack_util.message_stream(self.slack)
         for msg in feed:
             print(msg)
 
@@ -87,12 +95,12 @@ class ClientWrapper(object):
             # Handle Message
             text = msg['text'].strip()
             success = False
-            for regex, callback in self._hooks.items():
+            for regex, callback in self.hooks.items():
                 match = re.match(regex, text, flags=re.IGNORECASE)
                 if match:
                     success = True
                     print("Matched on callback {}".format(callback))
-                    callback(self._slack, msg, match)
+                    callback(self.slack, msg, match)
                     break
 
             if not success:
