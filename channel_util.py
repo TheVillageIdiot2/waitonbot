@@ -1,5 +1,6 @@
 
 import shelve
+import slack_util
 
 DB_NAME = "channel_priveleges"
 
