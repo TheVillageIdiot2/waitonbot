@@ -6,6 +6,7 @@ import job_nagger
 import management_commands
 import scroll_util
 import slack_util
+import slavestothemachine
 from dummy import FakeClient
 
 # Read api token from file
@@ -40,6 +41,10 @@ def main():
 
     # Add kill switch
     wrap.add_hook(management_commands.reboot_hook)
+
+    # Add towel rolling
+    wrap.add_hook(slavestothemachine.count_work_hook)
+    wrap.add_hook(slavestothemachine.dump_work_hook)
 
     # Add help
     help_callback = management_commands.list_hooks_callback_gen(wrap.hooks)
