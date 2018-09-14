@@ -90,9 +90,17 @@ def lookup_msg_brother(msg):
     Finds the real-world name of whoever posted msg.
     :return: brother dict or None
     """
+    return lookup_slackid_brother(msg.get("user"))
+
+
+def lookup_slackid_brother(slack_id):
+    """
+    Gets whatever brother the userid is registered to
+    :return: Brother dict or None
+    """
     with shelve.open(DB_NAME) as db:
         try:
-            scroll = db[msg.get("user")]
+            scroll = db[slack_id]
             return scroll_util.find_by_scroll(scroll)
         except ValueError:
             return None
