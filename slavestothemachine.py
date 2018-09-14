@@ -4,7 +4,7 @@ import identifier
 import re
 import shelve
 
-counted_data = ["flaked", "rolled", "replaced", "washed", "dryed"]
+counted_data = ["flaked", "rolled", "replaced", "washed", "dried"]
 lookup_format = "{}\s+(\d+)"
 
 DB_NAME = "towels_rolled"
