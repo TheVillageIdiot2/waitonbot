@@ -8,8 +8,6 @@ COMMAND_CENTER_ID = "GCR631LQ1"
 SLAVES_TO_THE_MACHINE_ID = "C9WUQBYNP"
 BOTZONE = "C3BF2MFKM"
 
-NOT_ALLOWED_HERE = "There's a time and place for everything, but not here!"
-
 
 # Callback for telling what channel we in
 def channel_check_callback(slack, msg, match):

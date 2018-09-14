@@ -13,18 +13,11 @@ def list_hooks_callback_gen(hooks):
 # Gracefully reboot to reload code changes
 # noinspection PyUnusedLocal
 def reboot_callback(slack, msg, match):
-    if msg["channel"] != channel_util.COMMAND_CENTER_ID:
-        response = channel_util.NOT_ALLOWED_HERE
-        reboot = False
-    else:
-        response = "Ok. Rebooting..."
-        reboot = True
-
+    response = "Ok. Rebooting..."
     slack_util.reply(slack, msg, response)
-    if reboot:
-        exit(0)
+    exit(0)
 
 
 # Make hooks
 bot_help_pattern = r"bot help"  # Can't init this directly, as it relies on us knowing all other hooks. handle in main
-reboot_hook = slack_util.Hook(reboot_callback, pattern=r"reboot")
+reboot_hook = slack_util.Hook(reboot_callback, pattern=r"reboot", channel_whitelist=[channel_util.COMMAND_CENTER_ID])

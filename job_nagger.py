@@ -20,38 +20,34 @@ class Job(object):
 
 
 def nag_callback(slack, msg, match):
-    # Only allow in command center
-    if msg["channel"] != channel_util.COMMAND_CENTER_ID:
-        response = channel_util.NOT_ALLOWED_HERE
-    else:
-        # Get the day
-        day = match.group(1).lower().strip()
+    # Get the day
+    day = match.group(1).lower().strip()
 
-        # Get the spreadsheet section
-        eight_jobs = google_api.get_sheet_range(SHEET_ID, eight_job_range)
-        ft_jobs = google_api.get_sheet_range(SHEET_ID, fiftythree_job_range)
+    # Get the spreadsheet section
+    eight_jobs = google_api.get_sheet_range(SHEET_ID, eight_job_range)
+    ft_jobs = google_api.get_sheet_range(SHEET_ID, fiftythree_job_range)
 
-        # Turn to job objects
-        eight_jobs = [Job("8", *r) for r in eight_jobs]
-        ft_jobs = [Job("53", *r) for r in ft_jobs]
-        jobs = eight_jobs + ft_jobs
+    # Turn to job objects
+    eight_jobs = [Job("8", *r) for r in eight_jobs]
+    ft_jobs = [Job("53", *r) for r in ft_jobs]
+    jobs = eight_jobs + ft_jobs
 
-        # Filter to day
-        jobs = [j for j in jobs if j.day == day]
+    # Filter to day
+    jobs = [j for j in jobs if j.day == day]
 
-        # Nag each
-        response = "Do yer jerbs! They are as follows:\n"
-        for job in jobs:
-            response += "({}) {} -- ".format(job.house, job.job_name)
-            ids = job.lookup_brother_slack_id()
-            if ids:
-                for slack_id in ids:
-                    response += "<@{}> ".format(slack_id)
-            else:
-                response += "{} (scroll missing. Please register for @ pings!)".format(job.brother_name)
-            response += "\n"
+    # Nag each
+    response = "Do yer jerbs! They are as follows:\n"
+    for job in jobs:
+        response += "({}) {} -- ".format(job.house, job.job_name)
+        ids = job.lookup_brother_slack_id()
+        if ids:
+            for slack_id in ids:
+                response += "<@{}> ".format(slack_id)
+        else:
+            response += "{} (scroll missing. Please register for @ pings!)".format(job.brother_name)
+        response += "\n"
 
     slack_util.reply(slack, msg, response, in_thread=False, to_channel=channel_util.GENERAL)
 
 
-nag_hook = slack_util.Hook(nag_callback, pattern=r"nagjobs\s*(.*)")
+nag_hook = slack_util.Hook(nag_callback, pattern=r"nagjobs\s*(.*)", channel_whitelist=[channel_util.COMMAND_CENTER_ID])
