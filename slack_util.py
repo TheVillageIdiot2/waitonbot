@@ -1,4 +1,5 @@
 from time import sleep
+import re
 
 """
 Slack helpers. Separated for compartmentalization
@@ -39,3 +40,46 @@ def message_stream(slack):
 
         sleep(15)
         print("Connection failed - retrying")
+
+
+class Hook(object):
+    def __init__(self, callback, pattern=None, channel_whitelist=None, channel_blacklist=None):
+        # Save all
+        self.pattern = pattern
+        self.channel_whitelist = channel_whitelist
+        self.channel_blacklist = channel_blacklist
+        self.callback = callback
+
+        # Remedy some sensible defaults
+        if self.pattern is None:
+            self.pattern = ".*"
+
+        if self.channel_blacklist is None:
+            import channel_util
+            self.channel_blacklist = [channel_util.GENERAL]
+        elif self.channel_whitelist is None:
+            pass  # We leave as none to show no whitelisting in effect
+        else:
+            raise Exception("Cannot whitelist and blacklist")
+
+    def check(self, slack, msg):
+        # Fail if pattern invalid
+        match = re.match(self.pattern, msg['text'], flags=re.IGNORECASE)
+        if match is None:
+            print("Missed pattern")
+            return False
+
+        # Fail if whitelist defined, and we aren't there
+        if self.channel_whitelist is not None and msg["channel"] not in self.channel_whitelist:
+            print("Missed whitelist")
+            return False
+
+        # Fail if blacklist defined, and we are there
+        if self.channel_blacklist is not None and msg["channel"] in self.channel_blacklist:
+            print("Hit blacklist")
+            return False
+
+        # Otherwise do callback and return success
+        print("Matched on pattern {} callback {}".format(self.pattern, self.callback))
+        self.callback(slack, msg, match)
+        return True

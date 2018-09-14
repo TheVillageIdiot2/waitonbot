@@ -10,10 +10,8 @@ BOTZONE = "C3BF2MFKM"
 
 NOT_ALLOWED_HERE = "There's a time and place for everything, but not here!"
 
-# Define our patterns
-channel_check_pattern = r"channel id\s*(.*)"
 
-
+# Callback for telling what channel we in
 def channel_check_callback(slack, msg, match):
     # Sets the users scroll
     # with shelve.open(DB_NAME) as db:
@@ -27,3 +25,6 @@ def channel_check_callback(slack, msg, match):
     response += "Channel id: {}\n".format(msg["channel"])
     response += "Escaped message: {}\n".format(rest_of_msg)
     slack_util.reply(slack, msg, response)
+
+
+channel_check_hook = slack_util.Hook(channel_check_callback, pattern=r"channel id\s*(.*)")

@@ -5,7 +5,7 @@ msg = {
     "type": "message",
     "channel": channel_util.COMMAND_CENTER_ID,
     "user": "U0Q1PKL92",
-    "text": "nagjobs tuesday",
+    "text": "my name",
     "ts": "1355517523.000005"
 }
 

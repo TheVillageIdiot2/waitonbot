@@ -10,13 +10,7 @@ import scroll_util
 # The following db maps SLACK_USER_ID -> SCROLL_INTEGER
 DB_NAME = "user_scrolls"
 
-# Initialize the db
-identify_pattern = r"i am (.*)"
-identify_other_pattern = r"<@(.*)>\s+has scroll\s+(.*)"
-check_pattern = r"my scroll.*"
-name_pattern = r"my name.*"
-
-
+# Initialize the hooks
 NON_REG_MSG = ("You currently have no scroll registered. To register, type\n"
                "i am 666\n"
                "except with your scroll instead of 666")
@@ -61,6 +55,7 @@ def identify_other_callback(slack, msg, match):
         slack_util.reply(slack, msg, result)
 
 
+# noinspection PyUnusedLocal
 def check_callback(slack, msg, match):
     # Tells the user their current scroll
     with shelve.open(DB_NAME) as db:
@@ -72,6 +67,7 @@ def check_callback(slack, msg, match):
         slack_util.reply(slack, msg, result)
 
 
+# noinspection PyUnusedLocal
 def name_callback(slack, msg, match):
     # Tells the user what slack thinks their name is
     with shelve.open(DB_NAME) as db:
@@ -116,3 +112,9 @@ def lookup_brother_userids(brother):
                 result.append(user_id)
 
         return result
+
+
+identify_hook = slack_util.Hook(identify_callback, pattern=r"i am (.*)")
+identify_other_hook = slack_util.Hook(identify_other_callback, pattern=r"<@(.*)>\s+has scroll\s+(.*)")
+check_hook = slack_util.Hook(check_callback, pattern=r"my scroll")
+name_hook = slack_util.Hook(name_callback, pattern=r"my name")

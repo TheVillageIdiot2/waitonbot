@@ -1,15 +1,11 @@
-from collections import OrderedDict
-
-import google_api as google  # For read drive
 from slackclient import SlackClient  # Obvious
-import slack_util
 
-import scroll_util
-import identifier
-import re
 import channel_util
+import identifier
 import job_nagger
 import management_commands
+import scroll_util
+import slack_util
 from dummy import FakeClient
 
 # Read api token from file
@@ -22,38 +18,37 @@ DEBUG_MODE = False
 
 
 def main():
-    wrapper = ClientWrapper()
+    wrap = ClientWrapper()
 
     # DEBUG: Add blanked handling
     # wrapper.add_hook(".*", print)
 
     # Add scroll handling
-    wrapper.add_hook(scroll_util.command_pattern, scroll_util.callback)
+    wrap.add_hook(scroll_util.scroll_hook)
 
     # Add id handling
-    wrapper.add_hook(identifier.check_pattern, identifier.check_callback)
-    wrapper.add_hook(identifier.identify_pattern, identifier.identify_callback)
-    wrapper.add_hook(identifier.identify_other_pattern, identifier.identify_other_callback)
-    wrapper.add_hook(identifier.name_pattern, identifier.name_callback)
+    wrap.add_hook(identifier.check_hook)
+    wrap.add_hook(identifier.identify_hook)
+    wrap.add_hook(identifier.identify_other_hook)
+    wrap.add_hook(identifier.name_hook)
 
     # Added channel utility
-    wrapper.add_hook(channel_util.channel_check_pattern, channel_util.channel_check_callback)
+    wrap.add_hook(channel_util.channel_check_hook)
 
     # Add nagging functionality
-    wrapper.add_hook(job_nagger.nag_pattern, job_nagger.nag_callback)
+    wrap.add_hook(job_nagger.nag_hook)
 
     # Add kill switch
-    wrapper.add_hook(management_commands.reboot_pattern, management_commands.reboot_callback)
+    wrap.add_hook(management_commands.reboot_hook)
 
     # Add help
-    help_callback = management_commands.list_hooks_callback_gen(wrapper.hooks.keys())
-    wrapper.add_hook(management_commands.bot_help_pattern, help_callback)
+    help_callback = management_commands.list_hooks_callback_gen(wrap.hooks)
+    wrap.add_hook(slack_util.Hook(help_callback, pattern=management_commands.bot_help_pattern))
 
-    wrapper.listen()
+    wrap.listen()
 
 
 # Callback to list command hooks
-
 
 class ClientWrapper(object):
     def __init__(self):
@@ -64,10 +59,10 @@ class ClientWrapper(object):
             self.slack = SlackClient(SLACK_API)
 
         # Hooks go regex -> callback on (slack, msg, match)
-        self.hooks = OrderedDict()
+        self.hooks = []
 
-    def add_hook(self, pattern, callback):
-        self.hooks[pattern] = callback
+    def add_hook(self, hook):
+        self.hooks.append(hook)
 
     def listen(self):
         feed = slack_util.message_stream(self.slack)
@@ -78,19 +73,16 @@ class ClientWrapper(object):
             if msg.get("subtype") is not None:
                 continue
 
-            # Never deal with general
+            # Never deal with general, EVER!
             if msg.get("channel") == channel_util.GENERAL:
                 continue
 
             # Handle Message
             text = msg['text'].strip()
             success = False
-            for regex, callback in self.hooks.items():
-                match = re.match(regex, text, flags=re.IGNORECASE)
-                if match:
+            for hook in self.hooks:
+                if hook.check(self.slack, msg):
                     success = True
-                    print("Matched on callback {}".format(callback))
-                    callback(self.slack, msg, match)
                     break
 
             if not success:

@@ -7,13 +7,10 @@ import re
 
 from fuzzywuzzy import process
 
-from slack_util import reply
+import slack_util
 
 # load the family tree
 familyfile = open("sortedfamilytree.txt", 'r')
-
-
-command_pattern = r"scroll\s+(.*)"
 
 # Parse out
 brother_match = re.compile(r"([0-9]*)~(.*)")
@@ -25,7 +22,7 @@ brothers = [{
 } for m in brothers]
 
 
-def callback(slack, msg, match):
+def scroll_callback(slack, msg, match):
     # Get the query
     query = match.group(1).strip()
 
@@ -41,7 +38,7 @@ def callback(slack, msg, match):
         result = "Couldn't find brother {}".format(query)
 
     # Respond
-    reply(slack, msg, result)
+    slack_util.reply(slack, msg, result)
 
 
 def find_by_scroll(scroll):
@@ -57,3 +54,6 @@ def find_by_name(name):
 
     # Do fuzzy match
     return process.extractOne(name, brothers, processor=lambda b: b["name"])[0]
+
+
+scroll_hook = slack_util.Hook(scroll_callback, pattern=r"scroll\s+(.*)")

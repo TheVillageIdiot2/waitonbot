@@ -4,11 +4,8 @@ import slack_util
 import google_api
 import channel_util
 
-nag_pattern = r"nagjobs\s*(.*)"
-
-
 SHEET_ID = "1lPj9GjB00BuIq9GelOWh5GmiGsheLlowPnHLnWBvMOM"
-eight_job_range = "House Jobs!A2:C25" # Format: Job Day Bro
+eight_job_range = "House Jobs!A2:C25"  # Format: Job Day Bro
 fiftythree_job_range = "House Jobs!E2:G6"
 
 
@@ -48,10 +45,13 @@ def nag_callback(slack, msg, match):
             response += "({}) {} -- ".format(job.house, job.job_name)
             ids = job.lookup_brother_slack_id()
             if ids:
-                for id in ids:
-                    response += "<@{}> ".format(id)
+                for slack_id in ids:
+                    response += "<@{}> ".format(slack_id)
             else:
                 response += "{} (scroll missing. Please register for @ pings!)".format(job.brother_name)
             response += "\n"
 
     slack_util.reply(slack, msg, response, in_thread=False, to_channel=channel_util.GENERAL)
+
+
+nag_hook = slack_util.Hook(nag_callback, pattern=r"nagjobs\s*(.*)")
