@@ -9,17 +9,13 @@ import identifier
 import re
 import channel_util
 import job_nagger
+import management_commands
 from dummy import FakeClient
 
 # Read api token from file
 api_file = open("apitoken.txt", 'r')
 SLACK_API = next(api_file).strip()
 api_file.close()
-
-# Read kill switch from file
-kill_switch_file = open("killswitch.txt", 'r')
-kill_switch = next(kill_switch_file).strip()
-kill_switch_file.close()
 
 # Enable to use dummy
 DEBUG_MODE = False
@@ -47,22 +43,16 @@ def main():
     wrapper.add_hook(job_nagger.nag_pattern, job_nagger.nag_callback)
 
     # Add kill switch
-    wrapper.add_hook(kill_switch, die)
+    wrapper.add_hook(management_commands.reboot_pattern, management_commands.reboot_callback)
 
     # Add help
-    def list_hooks(slack, msg, match):
-        slack_util.reply(slack, msg, "\n".join(wrapper.hooks.keys()))
-    wrapper.add_hook("bot help", list_hooks)
+    help_callback = management_commands.list_hooks_callback_gen(wrapper.hooks.keys())
+    wrapper.add_hook(management_commands.bot_help_pattern, help_callback)
 
     wrapper.listen()
 
+
 # Callback to list command hooks
-
-
-# Callback to die
-def die(*args):
-    print("Got kill switch")
-    exit()
 
 
 class ClientWrapper(object):
