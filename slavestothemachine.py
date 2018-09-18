@@ -11,7 +11,7 @@ DB_NAME = "towels_rolled"
 
 
 def fmt_work_dict(work_dict):
-    return ", ".join(["{} * {}".format(job, count) for job, count in sorted(work_dict.items())])
+    return ",\n".join(["{} × {}".format(job, count) for job, count in sorted(work_dict.items())])
 
 
 def count_work_callback(slack, msg, match):
@@ -50,7 +50,7 @@ def count_work_callback(slack, msg, match):
         db[db_key] = total_work
 
         # Four, congratulate them on their work
-        congrats = "{} recorded work: {}\nTotal work since last dump now {}".format(who_wrote_label,
+        congrats = "{} recorded work:\n{}\nTotal work since last dump now\n{}".format(who_wrote_label,
                                                                                     fmt_work_dict(new_work),
                                                                                     fmt_work_dict(total_work))
         slack_util.reply(slack, msg, congrats)
@@ -73,7 +73,7 @@ def dump_work_callback(slack, msg, match):
             else:
                 brother_name = brother_name["name"]
 
-            result.append("{} has done {}".format(brother_name, fmt_work_dict(work)))
+            result.append("{} has done:\n{}".format(brother_name, fmt_work_dict(work)))
 
         result.append("Database wiped. Next dump will show new work since the time of this message")
         # Send it back
