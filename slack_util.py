@@ -16,7 +16,9 @@ def reply(slack, msg, text, in_thread=True, to_channel=None):
 
     # Send in a thread by default
     if in_thread:
-        slack.rtm_send_message(channel=to_channel, message=text, thread=msg['ts'])
+        thread = (msg.get("thread_ts")  # In-thread case - get parent ts
+                  or msg.get("ts"))         # Not in-thread case - get msg itself ts
+        slack.rtm_send_message(channel=to_channel, message=text, thread=thread)
     else:
         slack.rtm_send_message(channel=to_channel, message=text)
 
