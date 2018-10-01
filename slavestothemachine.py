@@ -33,7 +33,8 @@ def count_work_callback(slack, msg, match):
 
         # Three: check if we found anything
         if len(new_work) == 0:
-            slack_util.reply(slack, msg, "No work recognized. Use words {} or work will not be recorded".format(counted_data))
+            if re.search(r'\s\d\s', text) is not None:
+                slack_util.reply(slack, msg, "No work recognized. Use words {} or work will not be recorded".format(counted_data))
             return
 
         # Three: Add it to their total work. We key by user_id, to avoid annoying identity shit
