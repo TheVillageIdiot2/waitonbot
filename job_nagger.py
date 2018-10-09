@@ -35,6 +35,10 @@ def nag_callback(slack, msg, match):
     # Filter to day
     jobs = [j for j in jobs if j.day == day]
 
+    # If no jobs found, somethings up. Probably mispelled day.
+    if not jobs:
+        slack_util.reply(slack, msg, "No jobs found. Check that the day is spelled correctly, with no extra symbols", in_thread=True)
+
     # Nag each
     response = "Do yer jerbs! They are as follows:\n"
     for job in jobs:
