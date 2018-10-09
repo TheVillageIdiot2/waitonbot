@@ -63,6 +63,9 @@ class ClientWrapper(object):
         else:
             self.slack = SlackClient(SLACK_API)
 
+        # For overriding output channel
+        self.debug_slack = slack_util.SlackDebugCondom(self.slack)
+
         # Hooks go regex -> callback on (slack, msg, match)
         self.hooks = []
 
@@ -83,15 +86,24 @@ class ClientWrapper(object):
                 continue
 
             # Handle Message
-            text = msg['text'].strip()
+            msg['text'] = msg['text'].strip()
+
+            # If first few letters DEBUG, use debug slack
+            if msg['text'][:6] == "DEBUG ":
+                slack_to_use = self.debug_slack
+                msg['text'] = msg['text'][6:]
+                print("Debug handling \"{}\"".format(msg['text']))
+            else:
+                slack_to_use = self.slack
+
             success = False
             for hook in self.hooks:
-                if hook.check(self.slack, msg):
+                if hook.check(slack_to_use, msg):
                     success = True
                     break
 
             if not success:
-                print("No hit on {}".format(text))
+                print("No hit on {}".format(msg['text']))
 
 
 # run main

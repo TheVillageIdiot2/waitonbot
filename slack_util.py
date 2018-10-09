@@ -1,5 +1,7 @@
 from time import sleep
 import re
+import channel_util
+from typing import Any
 
 """
 Slack helpers. Separated for compartmentalization
@@ -21,6 +23,28 @@ def reply(slack, msg, text, in_thread=True, to_channel=None):
         slack.rtm_send_message(channel=to_channel, message=text, thread=thread)
     else:
         slack.rtm_send_message(channel=to_channel, message=text)
+
+
+class SlackDebugCondom(object):
+    def __init__(self, actual_slack):
+        self.actual_slack = actual_slack
+
+    def __getattribute__(self, name: str) -> Any:
+        # Specialized behaviour
+        if name == "rtm_send_message":
+            # Flub some args
+            def override_send_message(*args, **kwargs):
+                print("Overriding: {} {}".format(args, kwargs))
+                kwargs["channel"] = channel_util.BOTZONE
+                kwargs["thread"] = None
+                self.actual_slack.rtm_send_message(*args, **kwargs)
+            return override_send_message
+        else:
+            # Default behaviour. Try to give the self first, elsewise give the child
+            try:
+                return super(SlackDebugCondom, self).__getattribute__(name)
+            except AttributeError:
+                return self.actual_slack.__getattribute__(name)
 
 
 def message_stream(slack):
