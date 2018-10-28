@@ -5,8 +5,10 @@ import google_api
 import channel_util
 
 SHEET_ID = "1lPj9GjB00BuIq9GelOWh5GmiGsheLlowPnHLnWBvMOM"
-eight_job_range = "House Jobs!A2:C25"  # Format: Job Day Bro
-fiftythree_job_range = "House Jobs!E2:G6"
+
+# Note: These ranges use named range feature of google sheets. To edit range of jobs, edit the named range in Data -> Named Ranges
+eight_job_range = "EightJobs"  # Format: Job Day Bro
+fiftythree_job_range = "FiftyThreeJobs"
 
 
 class Job(object):
