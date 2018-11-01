@@ -32,7 +32,7 @@ def nag_callback(slack, msg, match):
     # Turn to job objects
     def valid_row(x):
         try:
-            return len(x) == 2
+            return len(x) == 3
         except (AttributeError, TypeError):
             return False
 
