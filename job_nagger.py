@@ -30,8 +30,14 @@ def nag_callback(slack, msg, match):
     ft_jobs = google_api.get_sheet_range(SHEET_ID, fiftythree_job_range)
 
     # Turn to job objects
-    eight_jobs = [Job("8", *r) for r in eight_jobs]
-    ft_jobs = [Job("53", *r) for r in ft_jobs]
+    def valid_row(x):
+        try:
+            return len(x) == 2
+        except (AttributeError, TypeError):
+            return False
+
+    eight_jobs = [Job("8", *r) for r in eight_jobs if valid_row(r)]
+    ft_jobs = [Job("53", *r) for r in ft_jobs if valid_row(r)]
     jobs = eight_jobs + ft_jobs
 
     # Filter to day
