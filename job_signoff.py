@@ -3,13 +3,16 @@ from fuzzywuzzy import process
 import channel_util
 import google_api
 import slack_util
+import identifier
 
 SHEET_ID = "1lPj9GjB00BuIq9GelOWh5GmiGsheLlowPnHLnWBvMOM"
 
-# Note: These ranges use named range feature of google sheets. To edit range of jobs, edit the named range in Data -> Named Ranges
+# Note: These ranges use named range feature of google sheets.
+# To edit range of jobs, edit the named range in Data -> Named Ranges in the Goole Sheets page
 output_range = "JobScoreTracker"
 
 MIN_RATIO = 0.9
+SIGNOFF_REWARD = 0.1
 
 
 # Used to track a sufficiently shitty typed name
@@ -54,26 +57,43 @@ def put_points(vals):
 def signoff_callback(slack, msg, match):
     # Find the index of our person.
     name = match.group(1)
-    try:
-        found_name, new_total = adjust_score(name, 1)
-        response = "Gave {} one housejob point. They now have {} for this period.".format(found_name, new_total)
-    except BadName as e:
-        response = e.as_response()
 
-    slack_util.reply(slack, msg, response)
+    # Also, who just signed us off?
+    signer = identifier.lookup_msg_brother(msg)["name"]
+
+    # Try giving the person a point
+    try:
+        bro_name, bro_total = adjust_score(name, 1)
+        ass_name, ass_total = adjust_score(signer, SIGNOFF_REWARD)
+        slack_util.reply(slack, msg, "Gave {} one housejob point.\n"
+                                     "They now have {} for this period.\n"
+                                     "You ({}) were credited with the signoff".format(bro_name, bro_total, ass_name))
+    except BadName as e:
+        # We didn't find a name - no action was performed.
+        slack_util.reply(slack, msg, e.as_response())
 
 
 def punish_callback(slack, msg, match):
     # Find the index of our person.
     name = match.group(2)
-    try:
-        found_name, new_total = adjust_score(name, -1)
-        response = "Took one housejob point from {}. They now have {} for this period.".format(found_name,
-                                                                                               new_total)
-    except BadName as e:
-        response = e.as_response()
 
-    slack_util.reply(slack, msg, response)
+    # Also, who just signed us off?
+    signer = identifier.lookup_msg_brother(msg)["name"]
+
+    # Try giving the person a point
+    try:
+        bro_name, bro_total = adjust_score(name, -1)
+        ass_name, ass_total = adjust_score(signer, SIGNOFF_REWARD)
+        slack_util.reply(slack, msg, "Took one housejob point from {}.\n"
+                                     "They now have {} for this period.\n"
+                                     "Under the assumption that this was to undo a mistake, we have deducted the "
+                                     "usual signoff reward from you, ({}).\n "
+                                     "You can easily earn it back by signing off the right person ;).".format(bro_name,
+                                                                                                              bro_total,
+                                                                                                              ass_name))
+    except BadName as e:
+        # We didn't find a name - no action was performed.
+        slack_util.reply(slack, msg, e.as_response())
 
 
 def adjust_score(name, delta):
