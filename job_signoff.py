@@ -110,7 +110,7 @@ def punish_callback(slack, msg, match):
         alert_user(slack, bro_name,
                    "You, who we believe to be {}, just had your house job UN-signed off by {}.\n"
                    "Perhaps the asshoman made a mistake when they first signed you off.\n"
-                   "If you believe this to be a mistake, talk to them".format(bro_name, signer))
+                   "If you believe that they undid the signoff accidentally, go talk to them".format(bro_name, signer))
 
     except BadName as e:
         # We didn't find a name - no action was performed.
