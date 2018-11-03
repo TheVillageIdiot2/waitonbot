@@ -20,9 +20,20 @@ def reply(slack, msg, text, in_thread=True, to_channel=None):
     if in_thread:
         thread = (msg.get("thread_ts")  # In-thread case - get parent ts
                   or msg.get("ts"))         # Not in-thread case - get msg itself ts
-        slack.rtm_send_message(channel=to_channel, message=text, thread=thread)
+        result = slack.rtm_send_message(channel=to_channel, message=text, thread=thread)
     else:
-        slack.rtm_send_message(channel=to_channel, message=text)
+        result = slack.rtm_send_message(channel=to_channel, message=text)
+    return result
+
+
+def im_channel_for_id(slack, user_id):
+    conversations = slack.api_call("conversations.list", types="im")
+    if conversations["ok"]:
+        channels = conversations["channels"]
+        for channel in channels:
+            if channel["is_im"] and channel["user"] == user_id:
+                return channel["id"]
+    return None
 
 
 class SlackDebugCondom(object):

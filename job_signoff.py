@@ -4,6 +4,7 @@ import channel_util
 import google_api
 import identifier
 import slack_util
+import scroll_util
 
 SHEET_ID = "1lPj9GjB00BuIq9GelOWh5GmiGsheLlowPnHLnWBvMOM"
 
@@ -68,9 +69,25 @@ def signoff_callback(slack, msg, match):
         slack_util.reply(slack, msg, "Gave {} one housejob point.\n"
                                      "They now have {} for this period.\n"
                                      "You ({}) were credited with the signoff".format(bro_name, bro_total, ass_name))
+        alert_user(slack, bro_name,
+                   "You, who we believe to be {}, just had your house job signed off by {}!".format(bro_name, ass_name))
     except BadName as e:
         # We didn't find a name - no action was performed.
         slack_util.reply(slack, msg, e.as_response())
+
+
+def alert_user(slack, name, saywhat):
+    """
+    DM a brother saying something
+    """
+    brother_dict = scroll_util.find_by_name(name)
+    # We do this as a for loop just in case multiple people reg. to same scroll for some reason (e.g. dup accounts)
+    for slack_id in identifier.lookup_brother_userids(brother_dict):
+        dm_id = slack_util.im_channel_for_id(slack, slack_id)
+        if dm_id:
+            slack_util.reply(slack, None, saywhat, to_channel=dm_id, in_thread=False)
+        else:
+            print("Warning: unable to find dm for brother {}".format(brother_dict))
 
 
 def punish_callback(slack, msg, match):
@@ -90,6 +107,11 @@ def punish_callback(slack, msg, match):
                                      "You can easily earn it back by signing off the right person ;).".format(bro_name,
                                                                                                               bro_total,
                                                                                                               ass_name))
+        alert_user(slack, bro_name,
+                   "You, who we believe to be {}, just had your house job UN-signed off by {}.\n"
+                   "Perhaps the asshoman made a mistake when they first signed you off.\n"
+                   "If you believe this to be a mistake, talk to them".format(bro_name, signer))
+
     except BadName as e:
         # We didn't find a name - no action was performed.
         slack_util.reply(slack, msg, e.as_response())
@@ -99,7 +121,7 @@ def adjust_scores(*name_delta_tuples):
     # Get the current stuff
     points = get_curr_points()
     names = [p[0] for p in points]
-    results = []
+    modified_user_indexes = []
 
     for name, delta in name_delta_tuples:
         # Find our guy
@@ -118,16 +140,18 @@ def adjust_scores(*name_delta_tuples):
 
         # target should be in the form index, (name, score)
         target_new = [target_name, curr_score + delta]
-        results.append(target_new)
 
         # Put it back
         points[target_index] = target_new
 
-    # Record all when done
+        # Record where we edited
+        modified_user_indexes.append(target_index)
+
+    # Push all to sheets if exit loop without error
     put_points(points)
 
-    # Return the adjusted name/score_tuples
-    return results
+    # Conver indexes to rows, then return the adjusted name/score_tuples
+    return [points[i] for i in modified_user_indexes]
 
 
 def reset_callback(slack, msg, match):
