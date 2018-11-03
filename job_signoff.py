@@ -2,9 +2,8 @@ from fuzzywuzzy import process
 
 import channel_util
 import google_api
-import slack_util
 import identifier
-import time
+import slack_util
 
 SHEET_ID = "1lPj9GjB00BuIq9GelOWh5GmiGsheLlowPnHLnWBvMOM"
 
@@ -14,6 +13,7 @@ output_range = "JobScoreTracker"
 
 MIN_RATIO = 0.9
 SIGNOFF_REWARD = 0.1
+SAFETY_DELAY = 5
 
 
 # Used to track a sufficiently shitty typed name
@@ -64,9 +64,7 @@ def signoff_callback(slack, msg, match):
 
     # Try giving the person a point
     try:
-        bro_name, bro_total = adjust_score(name, 1)
-        time.sleep(1)
-        ass_name, ass_total = adjust_score(signer, SIGNOFF_REWARD)
+        (bro_name, bro_total), (ass_name, ass_total) = adjust_scores((name, 1), (signer, SIGNOFF_REWARD))
         slack_util.reply(slack, msg, "Gave {} one housejob point.\n"
                                      "They now have {} for this period.\n"
                                      "You ({}) were credited with the signoff".format(bro_name, bro_total, ass_name))
@@ -84,9 +82,7 @@ def punish_callback(slack, msg, match):
 
     # Try giving the person a point
     try:
-        bro_name, bro_total = adjust_score(name, -1)
-        time.sleep(1)
-        ass_name, ass_total = adjust_score(signer, -SIGNOFF_REWARD)
+        (bro_name, bro_total), (ass_name, ass_total) = adjust_scores((name, -1), (signer, -SIGNOFF_REWARD))
         slack_util.reply(slack, msg, "Took one housejob point from {}.\n"
                                      "They now have {} for this period.\n"
                                      "Under the assumption that this was to undo a mistake, we have deducted the "
@@ -99,34 +95,39 @@ def punish_callback(slack, msg, match):
         slack_util.reply(slack, msg, e.as_response())
 
 
-def adjust_score(name, delta):
+def adjust_scores(*name_delta_tuples):
     # Get the current stuff
     points = get_curr_points()
     names = [p[0] for p in points]
+    results = []
 
-    # Find our guy
-    target_name, ratio = process.extractOne(name, names)
-    ratio = ratio / 100.0
+    for name, delta in name_delta_tuples:
+        # Find our guy
+        target_name, ratio = process.extractOne(name, names)
+        ratio = ratio / 100.0
 
-    # If bad ratio, error
-    if ratio < MIN_RATIO:
-        raise BadName(target_name, ratio)
+        # If bad ratio, error
+        if ratio < MIN_RATIO:
+            raise BadName(target_name, ratio)
 
-    # Where is he in the list?
-    target_index = names.index(target_name)
+        # Where is he in the list?
+        target_index = names.index(target_name)
 
-    # Get his current score
-    curr_score = points[target_index][1]
+        # Get his current score
+        curr_score = points[target_index][1]
 
-    # target should be in the form index, (name, score)
-    target_new = [target_name, curr_score + delta]
+        # target should be in the form index, (name, score)
+        target_new = [target_name, curr_score + delta]
+        results.append(target_new)
 
-    # Put it back
-    points[target_index] = target_new
+        # Put it back
+        points[target_index] = target_new
+
+    # Record all when done
     put_points(points)
 
-    # Return the adjusted name
-    return target_new
+    # Return the adjusted name/score_tuples
+    return results
 
 
 def reset_callback(slack, msg, match):
