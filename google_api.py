@@ -10,12 +10,12 @@ from oauth2client import file, client, tools
 
 # If modifying these scopes, delete your previously saved credentials
 # at ~/.credentials/sheets.googleapis.com-python-quickstart.json
-SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly'
-APPLICATION_NAME = 'My Project'
+SCOPES = 'https://www.googleapis.com/auth/spreadsheets'
+APPLICATION_NAME = 'SlickSlacker'
 
 
 def _init_sheets_service():
-    store = file.Storage('token.json')
+    store = file.Storage('sheets_token.json')
     creds = store.get()
     if not creds or creds.invalid:
         flow = client.flow_from_clientsecrets('sheets_credentials.json', SCOPES)
@@ -36,9 +36,23 @@ def get_sheet_range(spreadsheet_id, range):
                                                                range=range).execute()
     values = result.get('values', [])
     if not values:
-        return None
+        return []
     else:
         return values
+
+
+def set_sheet_range(spreadsheet_id, range, values):
+    """
+    Set an array in the desired table
+    """
+    body = {
+        "values": values
+    }
+    result = _global_sheet_service.spreadsheets().values().update(spreadsheetId=spreadsheet_id,
+                                                                  range=range,
+                                                                  valueInputOption="RAW",
+                                                                  body=body).execute()
+    return result
 
 
 def get_calendar_credentials():
@@ -49,6 +63,7 @@ def get_calendar_credentials():
 
     Returns:
         Credentials, the obtained credential.
+    """
     """
     home_dir = os.path.expanduser('~')
     credential_dir = os.path.join(home_dir, '.credentials')
@@ -67,3 +82,5 @@ def get_calendar_credentials():
             credentials = tools.run(flow, store)
         print('Storing credentials to ' + credential_path)
     return credentials
+    """
+    raise NotImplementedError("This isn't going to work")

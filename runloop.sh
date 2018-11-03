@@ -8,7 +8,9 @@ do
   git pull
   echo "Press [CTRL+C] to stop..."
   sleep 1
-  python3 WaitonBot.py
+  touch script_log.txt
+  tail -n 1000 script_log.txt
+  python3 WaitonBot.py &>> script_log.txt
   sleep 1
   echo "Died. Updating and restarting..."
 done
