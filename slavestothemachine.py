@@ -34,7 +34,8 @@ def count_work_callback(slack, msg, match):
         # Three: check if we found anything
         if len(new_work) == 0:
             if re.search(r'\s\d\s', text) is not None:
-                slack_util.reply(slack, msg, "No work recognized. Use words {} or work will not be recorded".format(counted_data))
+                slack_util.reply(slack, msg,
+                                 "No work recognized. Use words {} or work will not be recorded".format(counted_data))
             return
 
         # Three: Add it to their total work. We key by user_id, to avoid annoying identity shit
@@ -52,8 +53,8 @@ def count_work_callback(slack, msg, match):
 
         # Four, congratulate them on their work
         congrats = "{} recorded work:\n{}\nTotal work since last dump now\n{}".format(who_wrote_label,
-                                                                                    fmt_work_dict(new_work),
-                                                                                    fmt_work_dict(total_work))
+                                                                                      fmt_work_dict(new_work),
+                                                                                      fmt_work_dict(total_work))
         slack_util.reply(slack, msg, congrats)
 
 
@@ -83,4 +84,5 @@ def dump_work_callback(slack, msg, match):
 
 # Make dem HOOKs
 count_work_hook = slack_util.Hook(count_work_callback, channel_whitelist=[channel_util.SLAVES_TO_THE_MACHINE_ID])
-dump_work_hook = slack_util.Hook(dump_work_callback, pattern="dump towel data", channel_whitelist=[channel_util.COMMAND_CENTER_ID])
+dump_work_hook = slack_util.Hook(dump_work_callback, pattern="dump towel data",
+                                 channel_whitelist=[channel_util.COMMAND_CENTER_ID])
