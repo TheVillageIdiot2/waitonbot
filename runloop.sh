@@ -8,9 +8,7 @@ do
   git pull
   echo "Press [CTRL+C] to stop..."
   sleep 1
-  touch script_log.txt
-  tail -n 1000 script_log.txt
-  python3 main.py &>> script_log.txt
+  python3 main.py
   sleep 1
   echo "Died. Updating and restarting..."
 done
