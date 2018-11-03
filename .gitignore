@@ -7,3 +7,6 @@ sheets_token.json
 *.dir
 *.pyc
 *.swp
+script_log.txt
+towels_rolled
+user_scrolls
