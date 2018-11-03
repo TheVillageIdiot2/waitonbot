@@ -1,14 +1,21 @@
 import time
 import channel_util
 
-msg = {
+roll_msg_1 = {
     "type": "message",
-    "channel": channel_util.COMMAND_CENTER_ID,
+    "channel": channel_util.SLAVES_TO_THE_MACHINE_ID,
     "user": "U0Q1PKL92",
-    "text": "my name",
+    "text": "flaked 3    rolled 2   washed 1",
     "ts": "1355517523.000005"
 }
 
+dump_roll_msg = {
+    "type": "message",
+    "channel": channel_util.COMMAND_CENTER_ID,
+    "user": "U0Q1PKL92",
+    "text": "dump towel data",
+    "ts": "1355517523.000005"
+}
 
 class FakeClient(object):
     def rtm_send_message(self, channel=None, message="", thread=None, to_channel=None):
@@ -19,4 +26,4 @@ class FakeClient(object):
 
     def rtm_read(self):
         time.sleep(4)
-        return [msg]
+        return [dump_roll_msg]

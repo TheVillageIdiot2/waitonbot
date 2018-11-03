@@ -4,6 +4,7 @@ import channel_util
 import google_api
 import slack_util
 import identifier
+import time
 
 SHEET_ID = "1lPj9GjB00BuIq9GelOWh5GmiGsheLlowPnHLnWBvMOM"
 
@@ -64,6 +65,7 @@ def signoff_callback(slack, msg, match):
     # Try giving the person a point
     try:
         bro_name, bro_total = adjust_score(name, 1)
+        time.sleep(1)
         ass_name, ass_total = adjust_score(signer, SIGNOFF_REWARD)
         slack_util.reply(slack, msg, "Gave {} one housejob point.\n"
                                      "They now have {} for this period.\n"
@@ -83,7 +85,8 @@ def punish_callback(slack, msg, match):
     # Try giving the person a point
     try:
         bro_name, bro_total = adjust_score(name, -1)
-        ass_name, ass_total = adjust_score(signer, SIGNOFF_REWARD)
+        time.sleep(1)
+        ass_name, ass_total = adjust_score(signer, -SIGNOFF_REWARD)
         slack_util.reply(slack, msg, "Took one housejob point from {}.\n"
                                      "They now have {} for this period.\n"
                                      "Under the assumption that this was to undo a mistake, we have deducted the "
