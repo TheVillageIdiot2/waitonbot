@@ -10,7 +10,7 @@ do
   sleep 1
   touch script_log.txt
   tail -n 1000 script_log.txt
-  python3 WaitonBot.py &>> script_log.txt
+  python3 main.py &>> script_log.txt
   sleep 1
   echo "Died. Updating and restarting..."
 done
