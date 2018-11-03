@@ -40,7 +40,7 @@ def get_curr_points():
             return [r[0], 0]
         else:
             try:
-                v = int(r[1])
+                v = float(r[1])
             except ValueError:
                 v = 0
             return [r[0], v]
