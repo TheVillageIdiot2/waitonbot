@@ -140,7 +140,7 @@ def reset_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     points = get_curr_points()
 
     new_points = [(a, 0, c) for a, _, c in points]
-    put_points(points)
+    put_points(new_points)
     slack_util.reply(slack, msg, "Reset scores")
 
 
@@ -190,7 +190,7 @@ def adjust_scores(*name_delta_tuples: Tuple[str, float]) -> List[Tuple[str, floa
 
 signoff_hook = slack_util.Hook(signoff_callback,
                                pattern=r"signoff\s+(.*)",
-                               channel_whitelist=[channel_util.BOTZONE])
+                               channel_whitelist=[channel_util.HOUSEJOBS])
 undosignoff_hook = slack_util.Hook(punish_callback,
                                    pattern=r"(unsignoff|undosignoff|undo)\s+(.*)",
                                    channel_whitelist=[channel_util.HOUSEJOBS])
