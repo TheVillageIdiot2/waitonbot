@@ -1,6 +1,8 @@
-import slack_util
+from typing import Match
 
-DB_NAME = "channel_priveleges"
+from slackclient import SlackClient
+
+import slack_util
 
 # Useful channels
 GENERAL = "C0CFHPNEM"
@@ -11,10 +13,8 @@ HOUSEJOBS = "CDWDDTAT0"
 
 
 # Callback for telling what channel we in
-def channel_check_callback(slack, msg, match):
+def channel_check_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     # Sets the users scroll
-    # with shelve.open(DB_NAME) as db:
-
     rest_of_msg = match.group(1).strip()
     rest_of_msg = rest_of_msg.replace("<", "lcaret")
     rest_of_msg = rest_of_msg.replace(">", "rcaret")

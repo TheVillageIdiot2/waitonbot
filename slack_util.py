@@ -1,14 +1,17 @@
 from time import sleep
 import re
+
+from slackclient import SlackClient
+
 import channel_util
-from typing import Any
+from typing import Any, Optional, Generator, Match, Callable, List
 
 """
 Slack helpers. Separated for compartmentalization
 """
 
 
-def reply(slack, msg, text, in_thread=True, to_channel=None):
+def reply(slack: SlackClient, msg: dict, text: str, in_thread: bool = True, to_channel: str = None) -> None:
     """
     Sends message with "text" as its content to the channel that message came from
     """
@@ -19,14 +22,13 @@ def reply(slack, msg, text, in_thread=True, to_channel=None):
     # Send in a thread by default
     if in_thread:
         thread = (msg.get("thread_ts")  # In-thread case - get parent ts
-                  or msg.get("ts"))         # Not in-thread case - get msg itself ts
-        result = slack.rtm_send_message(channel=to_channel, message=text, thread=thread)
+                  or msg.get("ts"))  # Not in-thread case - get msg itself ts
+        slack.rtm_send_message(channel=to_channel, message=text, thread=thread)
     else:
-        result = slack.rtm_send_message(channel=to_channel, message=text)
-    return result
+        slack.rtm_send_message(channel=to_channel, message=text)
 
 
-def im_channel_for_id(slack, user_id):
+def im_channel_for_id(slack: SlackClient, user_id: str) -> Optional[str]:
     conversations = slack.api_call("conversations.list", types="im")
     if conversations["ok"]:
         channels = conversations["channels"]
@@ -37,7 +39,7 @@ def im_channel_for_id(slack, user_id):
 
 
 class SlackDebugCondom(object):
-    def __init__(self, actual_slack):
+    def __init__(self, actual_slack: SlackClient):
         self.actual_slack = actual_slack
 
     def __getattribute__(self, name: str) -> Any:
@@ -49,6 +51,7 @@ class SlackDebugCondom(object):
                 kwargs["channel"] = channel_util.BOTZONE
                 kwargs["thread"] = None
                 self.actual_slack.rtm_send_message(*args, **kwargs)
+
             return override_send_message
         else:
             # Default behaviour. Try to give the self first, elsewise give the child
@@ -58,7 +61,7 @@ class SlackDebugCondom(object):
                 return self.actual_slack.__getattribute__(name)
 
 
-def message_stream(slack):
+def message_stream(slack) -> Generator[dict]:
     """
     Generator that yields messages from slack.
     Messages are in standard api format, look it up.
@@ -80,7 +83,11 @@ def message_stream(slack):
 
 
 class Hook(object):
-    def __init__(self, callback, pattern=None, channel_whitelist=None, channel_blacklist=None):
+    def __init__(self,
+                 callback: Callable[SlackClient, dict, Match],
+                 pattern: str = None,
+                 channel_whitelist: Optional[List[str]] = None,
+                 channel_blacklist: Optional[List[str]] = None):
         # Save all
         self.pattern = pattern
         self.channel_whitelist = channel_whitelist
@@ -99,7 +106,7 @@ class Hook(object):
         else:
             raise Exception("Cannot whitelist and blacklist")
 
-    def check(self, slack, msg):
+    def check(self, slack: SlackClient, msg: dict) -> bool:
         # Fail if pattern invalid
         match = re.match(self.pattern, msg['text'], flags=re.IGNORECASE)
         if match is None:

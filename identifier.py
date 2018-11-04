@@ -3,6 +3,9 @@ Allows users to register their user account as a specific scroll
 """
 
 import shelve
+from typing import Optional, List, Match
+
+from slackclient import SlackClient
 
 import slack_util
 import scroll_util
@@ -17,7 +20,9 @@ NON_REG_MSG = ("You currently have no scroll registered. To register, type\n"
 
 
 def identify_callback(slack, msg, match):
-    # Sets the users scroll
+    """
+    Sets the users scroll
+    """
     with shelve.open(DB_NAME) as db:
         # Get the query
         query = match.group(1).strip()
@@ -34,8 +39,10 @@ def identify_callback(slack, msg, match):
         slack_util.reply(slack, msg, result)
 
 
-def identify_other_callback(slack, msg, match):
-    # Sets the users scroll
+def identify_other_callback(slack: SlackClient, msg: dict, match: Match):
+    """
+    Sets another users scroll
+    """
     with shelve.open(DB_NAME) as db:
         # Get the query
         user = match.group(1).strip()
@@ -56,7 +63,10 @@ def identify_other_callback(slack, msg, match):
 
 
 # noinspection PyUnusedLocal
-def check_callback(slack, msg, match):
+def check_callback(slack: SlackClient, msg: dict, match: Match):
+    """
+    Replies with the users current scroll assignment
+    """
     # Tells the user their current scroll
     with shelve.open(DB_NAME) as db:
         try:
@@ -69,13 +79,15 @@ def check_callback(slack, msg, match):
 
 # noinspection PyUnusedLocal
 def name_callback(slack, msg, match):
-    # Tells the user what slack thinks their name is
+    """
+    Tells the user what it thinks the calling users name is.
+    """
     with shelve.open(DB_NAME) as db:
         try:
             scroll = db[msg.get("user")]
             brother = scroll_util.find_by_scroll(scroll)
             if brother:
-                result = "The bot thinks your name is {}".format(brother["name"])
+                result = "The bot thinks your name is {}".format(brother.name)
             else:
                 result = "The bot couldn't find a name for scroll {}".format(scroll)
         except (KeyError, ValueError):
@@ -85,18 +97,19 @@ def name_callback(slack, msg, match):
         slack_util.reply(slack, msg, result)
 
 
-def lookup_msg_brother(msg):
+def lookup_msg_brother(msg: dict) -> Optional[scroll_util.Brother]:
     """
     Finds the real-world name of whoever posted msg.
+    Utilizes their bound-scroll.
     :return: brother dict or None
     """
     return lookup_slackid_brother(msg.get("user"))
 
 
-def lookup_slackid_brother(slack_id):
+def lookup_slackid_brother(slack_id: str) -> Optional[scroll_util.Brother]:
     """
     Gets whatever brother the userid is registered to
-    :return: Brother dict or None
+    :return: Brother object or None
     """
     with shelve.open(DB_NAME) as db:
         try:
@@ -106,17 +119,18 @@ def lookup_slackid_brother(slack_id):
             return None
 
 
-def lookup_brother_userids(brother):
+def lookup_brother_userids(brother: scroll_util.Brother) -> List[str]:
     """
     Returns a list of all userids associated with the given brother.
-    :param brother: Std brother dict as specc'd in scroll_util
+
+    :param brother: Brother to lookup scrolls for
     :return: List of user id strings (may be empty)
     """
     with shelve.open(DB_NAME) as db:
         keys = db.keys()
         result = []
         for user_id in keys:
-            if db[user_id] == brother["scroll"]:
+            if db[user_id] == brother.scroll:
                 result.append(user_id)
 
         return result

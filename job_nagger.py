@@ -6,24 +6,29 @@ import channel_util
 
 SHEET_ID = "1lPj9GjB00BuIq9GelOWh5GmiGsheLlowPnHLnWBvMOM"
 
-# Note: These ranges use named range feature of google sheets. To edit range of jobs, edit the named range in Data -> Named Ranges
+# Note: These ranges use named range feature of google sheets.
+# To edit range of jobs, edit the named range in Data -> Named Ranges
 eight_job_range = "EightJobs"  # Format: Job Day Bro
 fiftythree_job_range = "FiftyThreeJobs"
 
 
 class Job(object):
-    def __init__(self, house, job_name, day, brother_name):
+    """
+    Object representing a house job
+    """
+    def __init__(self, house: str, job_name: str, day: str, brother_name: str):
         self.house, self.job_name, self.day, self.brother_name = house, job_name, day, brother_name
         self.day = self.day.lower().strip()
 
-    def lookup_brother_slack_id(self):
-        brother_dict = scroll_util.find_by_name(self.brother_name)
-        return identifier.lookup_brother_userids(brother_dict)
 
+def get_jobs(day=None):
+    """
+    Retrieves the house jobs for a given day.
+    If no day is provided, returns all house jobs for the week.
 
-def nag_callback(slack, msg, match):
-    # Get the day
-    day = match.group(1).lower().strip()
+    :param day: Day to compare the day column to. If equal, keep. If Not, discard. If day==None, ignore this filter
+    :return: list of Job objects
+    """
 
     # Get the spreadsheet section
     eight_jobs = google_api.get_sheet_range(SHEET_ID, eight_job_range)
@@ -41,20 +46,35 @@ def nag_callback(slack, msg, match):
     jobs = eight_jobs + ft_jobs
 
     # Filter to day
-    jobs = [j for j in jobs if j.day == day]
+    if day:
+        jobs = [j for j in jobs if j.day == day]
+
+    return jobs
+
+
+def nag_callback(slack, msg, match):
+    # Get the day
+    day = match.group(1).lower().strip()
+    jobs = get_jobs(day)
 
     # If no jobs found, somethings up. Probably mispelled day.
     if not jobs:
-        slack_util.reply(slack, msg, "No jobs found. Check that the day is spelled correctly, with no extra symbols", in_thread=True)
+        slack_util.reply(slack, msg, "No jobs found. Check that the day is spelled correctly, with no extra symbols",
+                         in_thread=True)
         return
 
     # Nag each
     response = "Do yer jerbs! They are as follows:\n"
     for job in jobs:
+        # Make the row template
         response += "({}) {} -- ".format(job.house, job.job_name)
-        ids = job.lookup_brother_slack_id()
-        if ids:
-            for slack_id in ids:
+
+        # Find the people to @
+        brother = scroll_util.find_by_name(job.brother_name)
+        brother_slack_ids = identifier.lookup_brother_userids(brother)
+
+        if brother_slack_ids:
+            for slack_id in brother_slack_ids:
                 response += "<@{}> ".format(slack_id)
         else:
             response += "{} (scroll missing. Please register for @ pings!)".format(job.brother_name)

@@ -1,3 +1,7 @@
+from typing import Match
+
+from slackclient import SlackClient
+
 import channel_util
 import slack_util
 import identifier
@@ -10,11 +14,12 @@ lookup_format = "{}\s+(\d+)"
 DB_NAME = "towels_rolled"
 
 
-def fmt_work_dict(work_dict):
+def fmt_work_dict(work_dict: dict) -> str:
     return ",\n".join(["{} × {}".format(job, count) for job, count in sorted(work_dict.items())])
 
 
-def count_work_callback(slack, msg, match):
+# noinspection PyUnusedLocal
+def count_work_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     with shelve.open(DB_NAME) as db:
         text = msg["text"].lower().strip()
 
@@ -58,7 +63,8 @@ def count_work_callback(slack, msg, match):
         slack_util.reply(slack, msg, congrats)
 
 
-def dump_work_callback(slack, msg, match):
+# noinspection PyUnusedLocal
+def dump_work_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     with shelve.open(DB_NAME) as db:
         # Dump out each user
         keys = db.keys()
@@ -69,13 +75,13 @@ def dump_work_callback(slack, msg, match):
             del db[user_id]
 
             # Get the name
-            brother_name = identifier.lookup_slackid_brother(user_id)
-            if brother_name is None:
-                brother_name = user_id
+            brother = identifier.lookup_slackid_brother(user_id)
+            if brother is None:
+                brother = user_id
             else:
-                brother_name = brother_name["name"]
+                brother = brother.name
 
-            result.append("{} has done:\n{}".format(brother_name, fmt_work_dict(work)))
+            result.append("{} has done:\n{}".format(brother, fmt_work_dict(work)))
 
         result.append("Database wiped. Next dump will show new work since the time of this message")
         # Send it back
