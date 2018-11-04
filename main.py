@@ -1,3 +1,5 @@
+from typing import List
+
 from slackclient import SlackClient  # Obvious
 
 import channel_util
@@ -19,7 +21,7 @@ api_file.close()
 DEBUG_MODE = False
 
 
-def main():
+def main() -> None:
     wrap = ClientWrapper()
 
     # DEBUG: Add blanked handling
@@ -72,12 +74,12 @@ class ClientWrapper(object):
         self.debug_slack = slack_util.SlackDebugCondom(self.slack)
 
         # Hooks go regex -> callback on (slack, msg, match)
-        self.hooks = []
+        self.hooks: List[slack_util.Hook] = []
 
-    def add_hook(self, hook):
+    def add_hook(self, hook: slack_util.Hook) -> None:
         self.hooks.append(hook)
 
-    def listen(self):
+    def listen(self) -> None:
         feed = slack_util.message_stream(self.slack)
         for msg in feed:
             print(msg)
