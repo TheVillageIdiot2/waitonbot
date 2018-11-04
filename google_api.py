@@ -2,7 +2,6 @@
 Examples provided by google for using their api.
 Very slightly modified by me to easily just get credentials
 """
-import os
 
 from googleapiclient.discovery import build
 from httplib2 import Http
@@ -28,12 +27,12 @@ _global_sheet_service = _init_sheets_service()
 
 
 # range should be of format 'SHEET NAME!A1:Z9'
-def get_sheet_range(spreadsheet_id, range):
+def get_sheet_range(spreadsheet_id, sheet_range):
     """
     Gets an array of the desired table
     """
     result = _global_sheet_service.spreadsheets().values().get(spreadsheetId=spreadsheet_id,
-                                                               range=range).execute()
+                                                               range=sheet_range).execute()
     values = result.get('values', [])
     if not values:
         return []
@@ -41,7 +40,7 @@ def get_sheet_range(spreadsheet_id, range):
         return values
 
 
-def set_sheet_range(spreadsheet_id, range, values):
+def set_sheet_range(spreadsheet_id, sheet_range, values):
     """
     Set an array in the desired table
     """
@@ -49,7 +48,7 @@ def set_sheet_range(spreadsheet_id, range, values):
         "values": values
     }
     result = _global_sheet_service.spreadsheets().values().update(spreadsheetId=spreadsheet_id,
-                                                                  range=range,
+                                                                  range=sheet_range,
                                                                   valueInputOption="RAW",
                                                                   body=body).execute()
     return result
