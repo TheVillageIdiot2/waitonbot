@@ -90,10 +90,10 @@ def signoff_callback(slack: SlackClient, msg: dict, match: Match) -> None:
 
     # Try giving the person a point
     try:
-        (bro_name, bro_total), (ass_name, ass_total) = adjust_scores((name, 1), (signer, SIGNOFF_REWARD))
-        slack_util.reply(slack, msg, "Gave {} one housejob point.\n"
+        (bro_name, bro_total, bro_job), (ass_name, ass_total, _) = adjust_scores((name, 1), (signer, SIGNOFF_REWARD))
+        slack_util.reply(slack, msg, "Gave {} one housejob point for job {}.\n"
                                      "They now have {} for this period.\n"
-                                     "You ({}) were credited with the signoff".format(bro_name, bro_total, ass_name))
+                                     "You ({}) were credited with the signoff".format(bro_name, bro_job, bro_total, ass_name))
         alert_user(slack, bro_name,
                    "You, who we believe to be {}, just had your house job signed off by {}!".format(bro_name, ass_name))
     except scroll_util.BadName as e:
@@ -113,7 +113,7 @@ def punish_callback(slack: SlackClient, msg: dict, match: Match) -> None:
 
     # Try giving the person a point
     try:
-        (bro_name, bro_total), (ass_name, ass_total) = adjust_scores((name, -1), (signer, -SIGNOFF_REWARD))
+        (bro_name, bro_total, _), (ass_name, ass_total, _) = adjust_scores((name, -1), (signer, -SIGNOFF_REWARD))
         slack_util.reply(slack, msg, "Took one housejob point from {}.\n"
                                      "They now have {} for this period.\n"
                                      "Under the assumption that this was to undo a mistake, we have deducted the "
@@ -190,7 +190,7 @@ def adjust_scores(*name_delta_tuples: Tuple[str, float]) -> List[Tuple[str, floa
 
 signoff_hook = slack_util.Hook(signoff_callback,
                                pattern=r"signoff\s+(.*)",
-                               channel_whitelist=[channel_util.HOUSEJOBS])
+                               channel_whitelist=[channel_util.BOTZONE])
 undosignoff_hook = slack_util.Hook(punish_callback,
                                    pattern=r"(unsignoff|undosignoff|undo)\s+(.*)",
                                    channel_whitelist=[channel_util.HOUSEJOBS])
