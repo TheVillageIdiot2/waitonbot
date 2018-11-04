@@ -86,7 +86,7 @@ def signoff_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     name = match.group(1)
 
     # Also, who just signed us off?
-    signer = identifier.lookup_msg_brother(msg)["name"]
+    signer = identifier.lookup_msg_brother(msg).name
 
     # Try giving the person a point
     try:
@@ -109,7 +109,7 @@ def punish_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     name = match.group(2)
 
     # Also, who just signed us off?
-    signer = identifier.lookup_msg_brother(msg)["name"]
+    signer = identifier.lookup_msg_brother(msg).name
 
     # Try giving the person a point
     try:

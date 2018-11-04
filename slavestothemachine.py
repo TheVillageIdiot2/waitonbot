@@ -26,7 +26,7 @@ def count_work_callback(slack: SlackClient, msg: dict, match: Match) -> None:
         # Couple things to work through.
         # One: Who sent the message?
         who_wrote = identifier.lookup_msg_brother(msg)
-        who_wrote_label = "{} [{}]".format(who_wrote["name"], who_wrote["scroll"])
+        who_wrote_label = "{} [{}]".format(who_wrote.name, who_wrote.scroll)
 
         # Two: What work did they do?
         new_work = {}
