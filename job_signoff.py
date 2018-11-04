@@ -31,7 +31,7 @@ def get_curr_points() -> List[Tuple[str, float, str]]:
     # Each element: force length of 3. Fmt name, score, job
     def row_fixer(r: List[Any]) -> Tuple[str, float, str]:
         if len(r) == 0:
-            return "", 0, ""
+            return "", 0, "No Job"
         else:
             # Get the appropriate score
             if len(r) > 1:
@@ -43,7 +43,7 @@ def get_curr_points() -> List[Tuple[str, float, str]]:
                 curr_score = 0
 
             # Find the current job
-            job = ""
+            job = "No Job"
             for j in all_jobs:
                 if j.brother_name == r[0]:
                     job = "{} ({} - {})".format(j.job_name, j.day, j.house)
@@ -102,6 +102,9 @@ def signoff_callback(slack: SlackClient, msg: dict, match: Match) -> None:
 
 
 def punish_callback(slack: SlackClient, msg: dict, match: Match) -> None:
+    """
+    Undoes a signoff. Maybe should rename
+    """
     # Find the index of our person.
     name = match.group(2)
 
@@ -128,7 +131,26 @@ def punish_callback(slack: SlackClient, msg: dict, match: Match) -> None:
         slack_util.reply(slack, msg, e.as_response())
 
 
+# noinspection PyUnusedLocal
+def reset_callback(slack: SlackClient, msg: dict, match: Match) -> None:
+    """
+    Resets the scores.
+    """
+    # Get curr rows
+    points = get_curr_points()
+
+    new_points = [(a, 0, c) for a, _, c in points]
+    put_points(points)
+    slack_util.reply(slack, msg, "Reset scores")
+
+
 def adjust_scores(*name_delta_tuples: Tuple[str, float]) -> List[Tuple[str, float, str]]:
+    """
+    Helper that uses a sequence of tuples in the format (name, delta) to adjust each (name) to have +delta score.
+    Operation performed as a batch.
+    :param name_delta_tuples: The name + score deltas
+    :return: The updated tuples rows.
+    """
     # Get the current stuff
     points = get_curr_points()
     names = [p[0] for p in points]
@@ -166,14 +188,12 @@ def adjust_scores(*name_delta_tuples: Tuple[str, float]) -> List[Tuple[str, floa
     return [points[i] for i in modified_user_indexes]
 
 
-# noinspection PyUnusedLocal
-def reset_callback(slack: SlackClient, msg: dict, match: Match) -> None:
-    raise NotImplementedError()
-    # reset_callback()
-
-
-signoff_hook = slack_util.Hook(signoff_callback, pattern=r"signoff\s+(.*)",
+signoff_hook = slack_util.Hook(signoff_callback,
+                               pattern=r"signoff\s+(.*)",
                                channel_whitelist=[channel_util.HOUSEJOBS])
-undosignoff_hook = slack_util.Hook(punish_callback, pattern=r"(unsignoff|undosignoff|undo)\s+(.*)",
+undosignoff_hook = slack_util.Hook(punish_callback,
+                                   pattern=r"(unsignoff|undosignoff|undo)\s+(.*)",
                                    channel_whitelist=[channel_util.HOUSEJOBS])
-# reset_hook = slack_util.Hook(reset_callback, pattern=r"reset_job_scores")
+reset_hook = slack_util.Hook(reset_callback,
+                             pattern=r"reset signoffs",
+                             channel_whitelist=[channel_util.COMMAND_CENTER_ID])

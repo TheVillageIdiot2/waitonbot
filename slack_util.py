@@ -61,7 +61,7 @@ class SlackDebugCondom(object):
                 return self.actual_slack.__getattribute__(name)
 
 
-def message_stream(slack) -> Generator[dict]:
+def message_stream(slack) -> Generator[dict, None, None]:
     """
     Generator that yields messages from slack.
     Messages are in standard api format, look it up.
@@ -84,7 +84,7 @@ def message_stream(slack) -> Generator[dict]:
 
 class Hook(object):
     def __init__(self,
-                 callback: Callable[SlackClient, dict, Match],
+                 callback: Callable[[SlackClient, dict, Match], None],
                  pattern: str = None,
                  channel_whitelist: Optional[List[str]] = None,
                  channel_blacklist: Optional[List[str]] = None):

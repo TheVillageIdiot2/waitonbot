@@ -52,6 +52,7 @@ def main() -> None:
     # Add signoffs
     wrap.add_hook(job_signoff.signoff_hook)
     wrap.add_hook(job_signoff.undosignoff_hook)
+    wrap.add_hook(job_signoff.reset_hook)
 
     # Add help
     help_callback = management_commands.list_hooks_callback_gen(wrap.hooks)
