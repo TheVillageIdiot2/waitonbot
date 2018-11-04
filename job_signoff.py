@@ -72,7 +72,8 @@ def alert_user(slack: SlackClient, name: str, saywhat: str) -> None:
     for slack_id in identifier.lookup_brother_userids(brother_dict):
         dm_id = slack_util.im_channel_for_id(slack, slack_id)
         if dm_id:
-            slack_util.reply(slack, None, saywhat, to_channel=dm_id, in_thread=False)
+            # Give a dummy msg dict, since we won't actually be using anything in it
+            slack_util.reply(slack, {}, saywhat, to_channel=dm_id, in_thread=False)
         else:
             print("Warning: unable to find dm for brother {}".format(brother_dict))
 
