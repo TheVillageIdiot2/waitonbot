@@ -119,7 +119,7 @@ def lookup_slackid_brother(slack_id: str) -> Optional[scroll_util.Brother]:
             return None
 
 
-async def lookup_brother_userids(brother: scroll_util.Brother) -> List[str]:
+def lookup_brother_userids(brother: scroll_util.Brother) -> List[str]:
     """
     Returns a list of all userids associated with the given brother.
 

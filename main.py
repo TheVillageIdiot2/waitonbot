@@ -57,6 +57,14 @@ def main() -> None:
     help_callback = management_commands.list_hooks_callback_gen(wrap.hooks)
     wrap.add_hook(slack_util.Hook(help_callback, pattern=management_commands.bot_help_pattern))
 
+    # Schedule?
+    async def do_later(slk: SlackClient, msg: dict, match: typing.Match):
+        time = int(match.group(1))
+        await asyncio.sleep(time)
+        slack_util.reply(slk, msg, "hello!")
+
+    wrap.add_hook(slack_util.Hook(do_later, "pingme\s+(\d+)"))
+
     event_loop = asyncio.get_event_loop()
     event_loop.run_until_complete(wrap.listen())
 

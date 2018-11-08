@@ -1,10 +1,10 @@
-from time import sleep
 import re
+from time import sleep
+from typing import Any, Optional, Generator, Match, Callable, List, Coroutine
 
 from slackclient import SlackClient
 
 import channel_util
-from typing import Any, Optional, Generator, Match, Callable, List, Awaitable, Coroutine
 
 """
 Slack helpers. Separated for compartmentalization
@@ -82,9 +82,13 @@ def message_stream(slack: SlackClient) -> Generator[dict, None, None]:
         print("Connection failed - retrying")
 
 
+MsgAction = Coroutine[Any, Any, None]
+Callback = Callable[[SlackClient, dict, Match], MsgAction]
+
+
 class Hook(object):
     def __init__(self,
-                 callback: Coroutine[[SlackClient, dict, Match]],
+                 callback: Callback,
                  pattern: str = None,
                  channel_whitelist: Optional[List[str]] = None,
                  channel_blacklist: Optional[List[str]] = None):

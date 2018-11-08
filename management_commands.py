@@ -6,7 +6,7 @@ import channel_util
 import slack_util
 
 
-async def list_hooks_callback_gen(hooks: List[slack_util.Hook]):
+def list_hooks_callback_gen(hooks: List[slack_util.Hook]) -> slack_util.Callback:
     # noinspection PyUnusedLocal
     async def callback(slack, msg, match):
         slack_util.reply(slack, msg, "\n".join(hook.pattern for hook in hooks))
