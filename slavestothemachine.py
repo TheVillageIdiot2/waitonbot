@@ -19,7 +19,7 @@ def fmt_work_dict(work_dict: dict) -> str:
 
 
 # noinspection PyUnusedLocal
-def count_work_callback(slack: SlackClient, msg: dict, match: Match) -> None:
+async def count_work_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     with shelve.open(DB_NAME) as db:
         text = msg["text"].lower().strip()
 
@@ -64,7 +64,7 @@ def count_work_callback(slack: SlackClient, msg: dict, match: Match) -> None:
 
 
 # noinspection PyUnusedLocal
-def dump_work_callback(slack: SlackClient, msg: dict, match: Match) -> None:
+async def dump_work_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     with shelve.open(DB_NAME) as db:
         # Dump out each user
         keys = db.keys()

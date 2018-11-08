@@ -52,7 +52,7 @@ def get_jobs(day=None):
     return jobs
 
 
-def nag_callback(slack, msg, match):
+async def nag_callback(slack, msg, match):
     # Get the day
     day = match.group(1).lower().strip()
     jobs = get_jobs(day)

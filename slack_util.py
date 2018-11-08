@@ -4,7 +4,7 @@ import re
 from slackclient import SlackClient
 
 import channel_util
-from typing import Any, Optional, Generator, Match, Callable, List
+from typing import Any, Optional, Generator, Match, Callable, List, Awaitable
 
 """
 Slack helpers. Separated for compartmentalization
@@ -61,7 +61,7 @@ class SlackDebugCondom(object):
                 return self.actual_slack.__getattribute__(name)
 
 
-def message_stream(slack) -> Generator[dict, None, None]:
+def message_stream(slack: SlackClient) -> Generator[dict, None, None]:
     """
     Generator that yields messages from slack.
     Messages are in standard api format, look it up.
@@ -72,19 +72,19 @@ def message_stream(slack) -> Generator[dict, None, None]:
         if slack.rtm_connect(with_team_state=False, auto_reconnect=True):
             print("Waiting for messages")
             while True:
-                sleep(2)
+                sleep(1)
                 update = slack.rtm_read()
                 for item in update:
                     if item.get('type') == 'message':
                         yield item
 
-        sleep(15)
+        sleep(5)
         print("Connection failed - retrying")
 
 
 class Hook(object):
     def __init__(self,
-                 callback: Callable[[SlackClient, dict, Match], None],
+                 callback: Callable[[SlackClient, dict, Match], Awaitable[None]],  # TODO: Fix this type
                  pattern: str = None,
                  channel_whitelist: Optional[List[str]] = None,
                  channel_blacklist: Optional[List[str]] = None):
@@ -106,7 +106,7 @@ class Hook(object):
         else:
             raise Exception("Cannot whitelist and blacklist")
 
-    def check(self, slack: SlackClient, msg: dict) -> bool:
+    async def check(self, slack: SlackClient, msg: dict) -> bool:
         # Fail if pattern invalid
         match = re.match(self.pattern, msg['text'], flags=re.IGNORECASE)
         if match is None:
@@ -125,5 +125,5 @@ class Hook(object):
 
         # Otherwise do callback and return success
         print("Matched on pattern {} callback {}".format(self.pattern, self.callback))
-        self.callback(slack, msg, match)
+        await self.callback(slack, msg, match)
         return True

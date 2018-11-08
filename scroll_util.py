@@ -31,7 +31,7 @@ brothers_matches = [m for m in brothers_matches if m]
 brothers: List[Brother] = [Brother(m.group(2), int(m.group(1))) for m in brothers_matches]
 
 
-def scroll_callback(slack: SlackClient, msg: dict, match: Match) -> None:
+async def scroll_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     """
     Finds the scroll of a brother, or the brother of a scroll, based on msg text.
     """

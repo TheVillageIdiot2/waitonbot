@@ -19,7 +19,7 @@ NON_REG_MSG = ("You currently have no scroll registered. To register, type\n"
                "except with your scroll instead of 666")
 
 
-def identify_callback(slack, msg, match):
+async def identify_callback(slack, msg, match):
     """
     Sets the users scroll
     """
@@ -39,7 +39,7 @@ def identify_callback(slack, msg, match):
         slack_util.reply(slack, msg, result)
 
 
-def identify_other_callback(slack: SlackClient, msg: dict, match: Match):
+async def identify_other_callback(slack: SlackClient, msg: dict, match: Match):
     """
     Sets another users scroll
     """
@@ -63,7 +63,7 @@ def identify_other_callback(slack: SlackClient, msg: dict, match: Match):
 
 
 # noinspection PyUnusedLocal
-def check_callback(slack: SlackClient, msg: dict, match: Match):
+async def check_callback(slack: SlackClient, msg: dict, match: Match):
     """
     Replies with the users current scroll assignment
     """
@@ -78,7 +78,7 @@ def check_callback(slack: SlackClient, msg: dict, match: Match):
 
 
 # noinspection PyUnusedLocal
-def name_callback(slack, msg, match):
+async def name_callback(slack, msg, match):
     """
     Tells the user what it thinks the calling users name is.
     """
@@ -119,7 +119,7 @@ def lookup_slackid_brother(slack_id: str) -> Optional[scroll_util.Brother]:
             return None
 
 
-def lookup_brother_userids(brother: scroll_util.Brother) -> List[str]:
+async def lookup_brother_userids(brother: scroll_util.Brother) -> List[str]:
     """
     Returns a list of all userids associated with the given brother.
 

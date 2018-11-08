@@ -78,7 +78,7 @@ def alert_user(slack: SlackClient, name: str, saywhat: str) -> None:
             print("Warning: unable to find dm for brother {}".format(brother_dict))
 
 
-def signoff_callback(slack: SlackClient, msg: dict, match: Match) -> None:
+async def signoff_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     """
     Callback to signoff a user.
     """
@@ -101,7 +101,7 @@ def signoff_callback(slack: SlackClient, msg: dict, match: Match) -> None:
         slack_util.reply(slack, msg, e.as_response())
 
 
-def punish_callback(slack: SlackClient, msg: dict, match: Match) -> None:
+async def punish_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     """
     Undoes a signoff. Maybe should rename
     """
@@ -132,7 +132,7 @@ def punish_callback(slack: SlackClient, msg: dict, match: Match) -> None:
 
 
 # noinspection PyUnusedLocal
-def reset_callback(slack: SlackClient, msg: dict, match: Match) -> None:
+async def reset_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     """
     Resets the scores.
     """

@@ -13,7 +13,7 @@ HOUSEJOBS = "CDWDDTAT0"
 
 
 # Callback for telling what channel we in
-def channel_check_callback(slack: SlackClient, msg: dict, match: Match) -> None:
+async def channel_check_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     # Sets the users scroll
     rest_of_msg = match.group(1).strip()
     rest_of_msg = rest_of_msg.replace("<", "lcaret")

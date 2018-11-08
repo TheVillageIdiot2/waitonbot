@@ -1,3 +1,4 @@
+import typing
 from typing import List
 
 from slackclient import SlackClient  # Obvious
@@ -10,6 +11,7 @@ import scroll_util
 import slack_util
 import slavestothemachine
 import job_signoff
+import asyncio
 from dummy import FakeClient
 
 # Read api token from file
@@ -20,12 +22,8 @@ api_file.close()
 # Enable to use dummy
 DEBUG_MODE = False
 
-
 def main() -> None:
     wrap = ClientWrapper()
-
-    # DEBUG: Add blanked handling
-    # wrapper.add_hook(".*", print)
 
     # Add scroll handling
     wrap.add_hook(scroll_util.scroll_hook)
@@ -58,12 +56,16 @@ def main() -> None:
     help_callback = management_commands.list_hooks_callback_gen(wrap.hooks)
     wrap.add_hook(slack_util.Hook(help_callback, pattern=management_commands.bot_help_pattern))
 
-    wrap.listen()
+    event_loop = asyncio.get_event_loop()
+    event_loop.run_until_complete(wrap.listen())
 
-
-# Callback to list command hooks
 
 class ClientWrapper(object):
+    """
+    Essentially the main state object.
+    We only ever expect one of these.
+    Holds a slack client, and handles messsages.
+    """
     def __init__(self):
         # Init slack
         if DEBUG_MODE:
@@ -80,9 +82,9 @@ class ClientWrapper(object):
     def add_hook(self, hook: slack_util.Hook) -> None:
         self.hooks.append(hook)
 
-    def listen(self) -> None:
-        feed = slack_util.message_stream(self.slack)
-        for msg in feed:
+    async def listen(self) -> None:
+        feed = self.async_message_feed()
+        async for msg in feed:
             print(msg)
 
             # We only care about standard messages, not subtypes, as those usually just channel activity
@@ -106,12 +108,28 @@ class ClientWrapper(object):
 
             success = False
             for hook in self.hooks:
-                if hook.check(slack_to_use, msg):
+                if await hook.check(slack_to_use, msg):
                     success = True
                     break
 
             if not success:
                 print("No hit on {}".format(msg['text']))
+
+    async def async_message_feed(self) -> typing.AsyncGenerator[dict, None]:
+        """
+        Async wrapper around the message feed.
+        Yields messages awaitably forever.
+        """
+        # Create the msg feed
+        feed = slack_util.message_stream(self.slack)
+
+        # Create a simple callable that gets one message from the feed
+        def get_one():
+            return next(feed)
+
+        # Continuously yield async threaded tasks that poll the feed
+        while True:
+            yield await asyncio.get_running_loop().run_in_executor(None, get_one)
 
 
 # run main
