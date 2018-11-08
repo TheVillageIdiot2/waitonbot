@@ -4,7 +4,7 @@ import re
 from slackclient import SlackClient
 
 import channel_util
-from typing import Any, Optional, Generator, Match, Callable, List, Awaitable
+from typing import Any, Optional, Generator, Match, Callable, List, Awaitable, Coroutine
 
 """
 Slack helpers. Separated for compartmentalization
@@ -84,7 +84,7 @@ def message_stream(slack: SlackClient) -> Generator[dict, None, None]:
 
 class Hook(object):
     def __init__(self,
-                 callback: Callable[[SlackClient, dict, Match], Awaitable[None]],  # TODO: Fix this type
+                 callback: Coroutine[[SlackClient, dict, Match]],
                  pattern: str = None,
                  channel_whitelist: Optional[List[str]] = None,
                  channel_blacklist: Optional[List[str]] = None):

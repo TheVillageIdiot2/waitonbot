@@ -22,6 +22,7 @@ api_file.close()
 # Enable to use dummy
 DEBUG_MODE = False
 
+
 def main() -> None:
     wrap = ClientWrapper()
 
@@ -66,6 +67,7 @@ class ClientWrapper(object):
     We only ever expect one of these.
     Holds a slack client, and handles messsages.
     """
+
     def __init__(self):
         # Init slack
         if DEBUG_MODE:
