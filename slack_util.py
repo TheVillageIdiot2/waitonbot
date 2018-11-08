@@ -1,3 +1,4 @@
+import asyncio
 import re
 from time import sleep
 from typing import Any, Optional, Generator, Match, Callable, List, Coroutine
@@ -110,24 +111,27 @@ class Hook(object):
         else:
             raise Exception("Cannot whitelist and blacklist")
 
-    async def check(self, slack: SlackClient, msg: dict) -> bool:
+    def check(self, msg: dict) -> Optional[Match]:
+        """
+        Returns whether a message should be handled by this dict, returning a Match if so, or None
+        """
         # Fail if pattern invalid
         match = re.match(self.pattern, msg['text'], flags=re.IGNORECASE)
         if match is None:
             # print("Missed pattern")
-            return False
+            return None
 
         # Fail if whitelist defined, and we aren't there
         if self.channel_whitelist is not None and msg["channel"] not in self.channel_whitelist:
             # print("Missed whitelist")
-            return False
+            return None
 
         # Fail if blacklist defined, and we are there
         if self.channel_blacklist is not None and msg["channel"] in self.channel_blacklist:
             # print("Hit blacklist")
-            return False
+            return None
 
-        # Otherwise do callback and return success
-        print("Matched on pattern {} callback {}".format(self.pattern, self.callback))
-        await self.callback(slack, msg, match)
-        return True
+        return match
+
+    def invoke(self, slack: SlackClient, msg: dict, match: Match):
+        return self.callback(slack, msg, match)

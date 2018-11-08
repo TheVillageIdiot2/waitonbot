@@ -1,17 +1,16 @@
-import typing
-from typing import List
+import asyncio
+from typing import List, Any, Match, AsyncGenerator
 
 from slackclient import SlackClient  # Obvious
 
 import channel_util
 import identifier
 import job_nagger
+import job_signoff
 import management_commands
 import scroll_util
 import slack_util
 import slavestothemachine
-import job_signoff
-import asyncio
 from dummy import FakeClient
 
 # Read api token from file
@@ -58,7 +57,7 @@ def main() -> None:
     wrap.add_hook(slack_util.Hook(help_callback, pattern=management_commands.bot_help_pattern))
 
     # Schedule?
-    async def do_later(slk: SlackClient, msg: dict, match: typing.Match):
+    async def do_later(slk: SlackClient, msg: dict, match: Match):
         time = int(match.group(1))
         await asyncio.sleep(time)
         slack_util.reply(slk, msg, "hello!")
@@ -92,11 +91,13 @@ class ClientWrapper(object):
     def add_hook(self, hook: slack_util.Hook) -> None:
         self.hooks.append(hook)
 
-    async def listen(self) -> None:
-        feed = self.async_message_feed()
-        async for msg in feed:
-            print(msg)
+    async def listen(self):
+        async for _ in self.spool_tasks():
+            print("Handling a message...!")
 
+    async def spool_tasks(self) -> AsyncGenerator[asyncio.Task, Any]:
+        async for msg in self.async_message_feed():
+            # Preprocess msg
             # We only care about standard messages, not subtypes, as those usually just channel activity
             if msg.get("subtype") is not None:
                 continue
@@ -105,10 +106,10 @@ class ClientWrapper(object):
             if msg.get("channel") == channel_util.GENERAL:
                 continue
 
-            # Handle Message
+            # Strip garbage
             msg['text'] = msg['text'].strip()
 
-            # If first few letters DEBUG, use debug slack
+            # Handle debug
             if msg['text'][:6] == "DEBUG ":
                 slack_to_use = self.debug_slack
                 msg['text'] = msg['text'][6:]
@@ -116,16 +117,27 @@ class ClientWrapper(object):
             else:
                 slack_to_use = self.slack
 
-            success = False
+            # Msg is good
+            # Find which hook, if any, satisfies
+            sat_hook = None
+            sat_match = None
             for hook in self.hooks:
-                if await hook.check(slack_to_use, msg):
-                    success = True
+                match = hook.check(msg)
+                if match is not None:
+                    sat_match = match
+                    sat_hook = hook
                     break
 
-            if not success:
-                print("No hit on {}".format(msg['text']))
+            # If no hooks, continue
+            if not sat_hook:
+                continue
 
-    async def async_message_feed(self) -> typing.AsyncGenerator[dict, None]:
+            # Throw up as a task, otherwise
+            coro = sat_hook.invoke(slack_to_use, msg, sat_match)
+            task = asyncio.create_task(coro)
+            yield task
+
+    async def async_message_feed(self) -> AsyncGenerator[dict, None]:
         """
         Async wrapper around the message feed.
         Yields messages awaitably forever.
