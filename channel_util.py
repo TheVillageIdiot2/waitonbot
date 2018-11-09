@@ -6,6 +6,7 @@ import slack_util
 
 # Useful channels
 GENERAL = "C0CFHPNEM"
+RANDOM = "C0CFDQWUW"
 COMMAND_CENTER_ID = "GCR631LQ1"
 SLAVES_TO_THE_MACHINE_ID = "C9WUQBYNP"
 BOTZONE = "C3BF2MFKM"
@@ -26,4 +27,5 @@ async def channel_check_callback(slack: SlackClient, msg: dict, match: Match) ->
     slack_util.reply(slack, msg, response)
 
 
-channel_check_hook = slack_util.Hook(channel_check_callback, pattern=r"channel id\s*(.*)")
+channel_check_hook = slack_util.Hook(channel_check_callback,
+                                     pattern=r"channel id\s*(.*)")

@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, Any, Match, AsyncGenerator
+from typing import List, Any, AsyncGenerator
 
 from slackclient import SlackClient  # Obvious
 
@@ -8,6 +8,7 @@ import identifier
 import job_nagger
 import job_signoff
 import management_commands
+import periodicals
 import scroll_util
 import slack_util
 import slavestothemachine
@@ -56,16 +57,14 @@ def main() -> None:
     help_callback = management_commands.list_hooks_callback_gen(wrap.hooks)
     wrap.add_hook(slack_util.Hook(help_callback, pattern=management_commands.bot_help_pattern))
 
-    # Schedule?
-    async def do_later(slk: SlackClient, msg: dict, match: Match):
-        time = int(match.group(1))
-        await asyncio.sleep(time)
-        slack_util.reply(slk, msg, "hello!")
-
-    wrap.add_hook(slack_util.Hook(do_later, "pingme\s+(\d+)"))
+    # Add boozebot
+    wrap.add_passive(periodicals.ItsTenPM())
 
     event_loop = asyncio.get_event_loop()
-    event_loop.run_until_complete(wrap.listen())
+    message_handling = wrap.respond_messages()
+    passive_handling = wrap.run_passives()
+    both = asyncio.gather(message_handling, passive_handling)
+    event_loop.run_until_complete(both)
 
 
 class ClientWrapper(object):
@@ -88,10 +87,26 @@ class ClientWrapper(object):
         # Hooks go regex -> callback on (slack, msg, match)
         self.hooks: List[slack_util.Hook] = []
 
+        # Periodicals are just wrappers around an iterable, basically
+        self.passives: List[slack_util.Passive] = []
+
+    # Scheduled events handling
+    def add_passive(self, per: slack_util.Passive) -> None:
+        self.passives.append(per)
+
+    async def run_passives(self) -> None:
+        # Make a task to repeatedly spawn each event
+        awaitables = [p.run(self.slack) for p in self.passives]
+        await asyncio.gather(*awaitables)
+
+    # Message handling
     def add_hook(self, hook: slack_util.Hook) -> None:
         self.hooks.append(hook)
 
-    async def listen(self):
+    async def respond_messages(self) -> None:
+        """
+        Asynchronous tasks that eternally reads and responds to messages.
+        """
         async for _ in self.spool_tasks():
             print("Handling a message...!")
 
@@ -108,6 +123,7 @@ class ClientWrapper(object):
 
             # Strip garbage
             msg['text'] = msg['text'].strip()
+            print("Recv: \"{}\"".format(msg['text']))
 
             # Handle debug
             if msg['text'][:6] == "DEBUG ":

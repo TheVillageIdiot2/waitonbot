@@ -1,7 +1,7 @@
-import asyncio
 import re
+from asyncio import Task
 from time import sleep
-from typing import Any, Optional, Generator, Match, Callable, List, Coroutine
+from typing import Any, Optional, Generator, Match, Callable, List, Coroutine, AsyncGenerator
 
 from slackclient import SlackClient
 
@@ -70,14 +70,20 @@ def message_stream(slack: SlackClient) -> Generator[dict, None, None]:
     """
     # Do forever
     while True:
-        if slack.rtm_connect(with_team_state=False, auto_reconnect=True):
-            print("Waiting for messages")
-            while True:
-                sleep(1)
-                update = slack.rtm_read()
-                for item in update:
-                    if item.get('type') == 'message':
-                        yield item
+        try:
+            if slack.rtm_connect(with_team_state=False, auto_reconnect=True):
+                print("Waiting for messages")
+                while True:
+                    sleep(1)
+                    update = slack.rtm_read()
+                    for item in update:
+                        if item.get('type') == 'message':
+                            yield item
+        except OSError as e:
+            print("Error while reading messages:")
+            print(e)
+        except (ValueError, TypeError):
+            print("Malformed message... Restarting connection")
 
         sleep(5)
         print("Connection failed - retrying")
@@ -90,7 +96,7 @@ Callback = Callable[[SlackClient, dict, Match], MsgAction]
 class Hook(object):
     def __init__(self,
                  callback: Callback,
-                 pattern: str = None,
+                 pattern: str,
                  channel_whitelist: Optional[List[str]] = None,
                  channel_blacklist: Optional[List[str]] = None):
         # Save all
@@ -100,9 +106,6 @@ class Hook(object):
         self.callback = callback
 
         # Remedy some sensible defaults
-        if self.pattern is None:
-            self.pattern = ".*"
-
         if self.channel_blacklist is None:
             import channel_util
             self.channel_blacklist = [channel_util.GENERAL]
@@ -135,3 +138,12 @@ class Hook(object):
 
     def invoke(self, slack: SlackClient, msg: dict, match: Match):
         return self.callback(slack, msg, match)
+
+
+class Passive(object):
+    """
+    Base class for Periodical tasks, such as reminders and stuff
+    """
+    async def run(self, slack: SlackClient) -> None:
+        # Run this passive routed through the specified slack client.
+        raise NotImplementedError()

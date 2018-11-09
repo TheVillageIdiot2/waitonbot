@@ -20,6 +20,9 @@ class Brother(object):
         self.name = name
         self.scroll = scroll
 
+    def __repr__(self):
+        return "<Brother {}-{}>".format(self.name, self.scroll)
+
 
 # load the family tree
 familyfile = open("sortedfamilytree.txt", 'r')
