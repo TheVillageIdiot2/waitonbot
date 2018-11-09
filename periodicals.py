@@ -17,7 +17,7 @@ class ItsTenPM(slack_util.Passive):
     async def run(self, slack: SlackClient) -> None:
         while True:
             # Get 10PM
-            ten_pm = datetime.now().replace(hour=21, minute=0, second=0)
+            ten_pm = datetime.now().replace(hour=20, minute=0, second=0)
 
             # Find out how long until it, then sleep that long
             delay = seconds_until(ten_pm)
