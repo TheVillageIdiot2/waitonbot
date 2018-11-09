@@ -1,9 +1,9 @@
 import re
-from asyncio import Task
 from time import sleep
-from typing import Any, Optional, Generator, Match, Callable, List, Coroutine, AsyncGenerator
+from typing import Any, Optional, Generator, Match, Callable, List, Coroutine
 
 from slackclient import SlackClient
+from slackclient.client import SlackNotConnected
 
 import channel_util
 
@@ -79,7 +79,7 @@ def message_stream(slack: SlackClient) -> Generator[dict, None, None]:
                     for item in update:
                         if item.get('type') == 'message':
                             yield item
-        except OSError as e:
+        except (SlackNotConnected, OSError) as e:
             print("Error while reading messages:")
             print(e)
         except (ValueError, TypeError):
