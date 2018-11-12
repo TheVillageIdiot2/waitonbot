@@ -7,13 +7,11 @@ import management_commands
 import periodicals
 import scroll_util
 import slavestothemachine
-
-# Read api token from file
-from client_wrapper import ClientWrapper
+import client_wrapper
 
 
 def main() -> None:
-    wrap = ClientWrapper()
+    wrap = client_wrapper.get_client_wrapper()
 
     # Add scroll handling
     wrap.add_hook(scroll_util.scroll_hook)

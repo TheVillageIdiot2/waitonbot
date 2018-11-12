@@ -4,6 +4,7 @@ from fuzzywuzzy import fuzz
 from slackclient import SlackClient
 
 import channel_util
+import client_wrapper
 import house_management
 import identifier
 import scroll_util
@@ -66,7 +67,8 @@ def do_signoff(slack: SlackClient, msg: dict, on_assign_index: int, by_brother: 
     slack_util.reply(slack, msg, "{} signed off {} for {}".format(on_assign.signer.name,
                                                                   on_assign.assignee.name,
                                                                   on_assign.job.pretty_fmt()))
-    alert_user(slack, on_assign.assignee, "Your house job was signed off")
+    alert_user(slack, on_assign.assignee, "{} signed you off for {}.".format(on_assign.signer.name,
+                                                                             on_assign.job.pretty_fmt()))
 
 
 async def signoff_callback(slack: SlackClient, msg: dict, match: Match) -> None:
@@ -145,7 +147,8 @@ async def signoff_callback(slack: SlackClient, msg: dict, match: Match) -> None:
                                                "signoff step.")
 
         # Make a listener hook
-        slack_util.ReplyWaiter(foc, pattern, msg["ts"], 60)
+        new_hook = slack_util.ReplyWaiter(foc, pattern, msg["ts"], 60)
+        client_wrapper.get_client_wrapper().add_hook(new_hook)
 
 
 # noinspection PyUnusedLocal

@@ -158,7 +158,7 @@ class ReplyWaiter(AbsHook):
     def try_apply(self, slack: SlackClient, msg: dict) -> Optional[Coroutine[None, None, None]]:
         # First check: are we dead of age yet?
         time_alive = time() - self.start_time
-        should_expire = time_alive < self.lifetime
+        should_expire = time_alive > self.lifetime
 
         # If so, give up the ghost
         if self.dead or should_expire:
