@@ -1,0 +1,270 @@
+import dataclasses
+from dataclasses import dataclass
+from datetime import date, timedelta
+from typing import Tuple, List, Optional, Any
+
+import google_api
+import scroll_util
+
+SHEET_ID = "1lPj9GjB00BuIq9GelOWh5GmiGsheLlowPnHLnWBvMOM"
+
+# Note: These ranges use named range feature of google sheets.
+# To edit range of jobs, edit the named range in Data -> Named Ranges
+job_range = "AllJobs"  # Note that the first row is headers
+point_range = "PointRange"
+
+# How tolerant of spelling errors in names to be
+SHEET_LOOKUP_THRESHOLD = 0.9
+
+JOB_VAL = 1
+LATE_VAL = 0.5
+MISS_VAL = -1
+SIGNOFF_VAL = 0.1
+
+# What to put for a non-signed-off job
+SIGNOFF_PLACEHOLDER = "E-SIGNOFF"
+
+
+@dataclass
+class Job(object):
+    """
+    Represents a job in a more internally meaningful way.
+    """
+    name: str
+    house: str
+    day_of_week: str
+    # Extra stuff, interpreted
+    day: Optional[date]
+
+
+@dataclass
+class JobAssignment(object):
+    """
+    Tracks a job's assignment and completion
+    """
+    job: Job
+    assignee: scroll_util.Brother
+    signer: Optional[scroll_util.Brother]
+    late: bool
+
+    def to_raw(self) -> Tuple[str, str, str, str, str, str]:
+        # Converts this back into a spreadsheet row
+        signer_name = self.signer.name if self.signer is not None else SIGNOFF_PLACEHOLDER
+        late = "y" if self.late else "n"
+        return self.job.name, self.job.house, self.job.day_of_week, self.assignee.name, signer_name, late
+
+
+@dataclass
+class PointStatus(object):
+    """
+    Tracks a brothers points
+    """
+    brother_raw: str
+    brother: scroll_util.Brother  # Interpereted
+    job_points: float = 0
+    signoff_points: float = 0
+    towel_points: float = 0
+    work_party_points: float = 0
+    bonus_points: float = 0
+
+    def to_raw(self) -> Tuple[str, str, str, str, str, str]:
+        # Convert to a row. Also, do some rounding while we're at it
+        fstring = "{:.2f}"
+        return (self.brother_raw,
+                fstring.format(self.job_points),
+                fstring.format(self.signoff_points),
+                fstring.format(self.towel_points),
+                fstring.format(self.work_party_points),
+                fstring.format(self.bonus_points),
+                )
+
+
+def strip_all(l: List[str]) -> List[str]:
+    return [x.strip() for x in l]
+
+
+def import_assignments() -> List[Optional[JobAssignment]]:
+    """
+    Imports Jobs and JobAssignments from the sheet. 1:1 row correspondence.
+    """
+    # Get the raw data
+    job_rows = google_api.get_sheet_range(SHEET_ID, job_range)
+
+    # None-out invalid rows (length not at least 4, which includes the 4 most important features)
+    def fixer(row):
+        if len(row) == 4:
+            return strip_all(row + [SIGNOFF_PLACEHOLDER, "n"])
+        elif len(row) == 5:
+            return strip_all(row + "n")
+        elif len(row) == 6:
+            return strip_all(row)
+        else:
+            return None
+
+    # Apply the fix
+    job_rows = [fixer(row) for row in job_rows]
+
+    # Now, create jobs
+    assignments = []
+    for row in job_rows:
+        if row is None:
+            assignments.append(None)
+        else:
+            # Breakout list
+            job_name, location, day, assignee, signer, late = row
+
+            # Figure out when the day actually is, in terms of the date class
+            day_rank = {
+                "monday": 0,
+                "tuesday": 1,
+                "wednesday": 2,
+                "thursday": 3,
+                "friday": 4,
+                "saturday": 5,
+                "sunday": 6
+            }.get(day.lower(), None)
+
+            if day_rank is not None:
+                # Figure out current date day of week, and extrapolate the jobs day of week from there
+                today = date.today()
+                today_rank = today.weekday()
+
+                days_till = day_rank - today_rank
+                if days_till <= 0:
+                    days_till += 7
+
+                # Now we know what day it is!
+                job_day = today + timedelta(days=days_till)
+            else:
+                # Can't win 'em all
+                job_day = None
+
+            # Create the job
+            job = Job(name=job_name, house=location, day_of_week=day, day=job_day)
+
+            # Now make an assignment for the job
+            # Find the brother it is assigned to
+            try:
+                assignee = scroll_util.find_by_name(assignee, SHEET_LOOKUP_THRESHOLD)
+            except scroll_util.BadName:
+                # If we can't get one close enough, make a dummy
+                assignee = scroll_util.Brother(assignee, scroll_util.MISSINGBRO_SCROLL)
+
+            # Find the brother who is currently listed as having signed it off
+            try:
+                if signer == SIGNOFF_PLACEHOLDER:
+                    signer = None
+                else:
+                    signer = scroll_util.find_by_name(signer)
+            except scroll_util.BadName:
+                # If we can't figure out the name
+                signer = None
+
+            # Make late a bool
+            late = late == "y"
+
+            # Create the assignment
+            assignment = JobAssignment(job=job, assignee=assignee, signer=signer, late=late)
+
+            # Append to job/assignment lists
+            assignments.append(assignment)
+
+    # Git 'em gone
+    return assignments
+
+
+def export_assignments(assigns: List[Optional[JobAssignment]]) -> None:
+    # Smash to rows
+    rows = []
+    for v in assigns:
+        if v is None:
+            rows.append([""] * 6)
+        else:
+            rows.append(list(v.to_raw()))
+
+    # Send to google
+    google_api.set_sheet_range(SHEET_ID, job_range, rows)
+
+
+def import_points() -> (List[str], List[PointStatus]):
+    # Figure out how many things there are in a point status
+    field_count = len(dataclasses.fields(PointStatus))
+
+    # Get the raw data
+    point_rows = google_api.get_sheet_range(SHEET_ID, point_range)
+
+    # Get the headers
+    headers = point_rows[0]
+    point_rows = point_rows[1:]
+
+    # Tidy rows up
+    def converter(row: List[Any]) -> Optional[PointStatus]:
+        # If its too long, or empty already, ignore
+        if len(row) == 0 or len(row) > field_count:
+            return None
+
+        # Ensure its the proper length
+        row: List[Any] = row + ([0] * (field_count - len(row) - 1))
+
+        # Ensure all past the first column are float. If can't convert, make 0
+        for i in range(1, len(row)):
+            try:
+                x = float(row[i])
+            except ValueError:
+                x = 0
+            row[i] = x
+
+        # Get the brother for the last item
+        real_brother = scroll_util.find_by_name(row[0], recent_only=True)
+
+        # Ok! Now, we just map it directly to a PointStatus
+        status = PointStatus(row[0], real_brother, *(row[1:]))
+        return status
+
+    # Perform conversion and return
+    point_statuses = [converter(row) for row in point_rows]
+    return headers, point_statuses
+
+
+def export_points(headers: List[str], points: List[PointStatus]) -> None:
+    # Smash to rows
+    rows = [list(point_status.to_raw()) for point_status in points]
+    rows = [headers] + rows
+
+    # Send to google
+    google_api.set_sheet_range(SHEET_ID, point_range, rows)
+
+
+def apply_house_points(points: List[PointStatus], assigns: List[Optional[JobAssignment]]):
+    """
+    Modifies the points list to reflect job assignment scores.
+    Destroys existing values in the column
+    """
+    # First, eliminate all house points
+    for p in points:
+        p.job_points = 0
+
+    # Then, apply each assign
+    for a in assigns:
+        # Ignore null assigns
+        if a is None:
+            continue
+
+        # What modifier should this have?
+        if a.signer is None:
+            score = MISS_VAL
+        else:
+            if a.late:
+                score = LATE_VAL
+            else:
+                score = JOB_VAL
+
+        # Find the corr bro in points
+        for p in points:
+            # If we find, add the score and stop looking
+            if p.brother == a.assignee:
+                p.job_points += score
+                break
+
+            if p.brother == a.signer:
+                p.signoff_points += SIGNOFF_VAL

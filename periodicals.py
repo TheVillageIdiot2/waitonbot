@@ -24,7 +24,7 @@ class ItsTenPM(slack_util.Passive):
             await asyncio.sleep(delay)
 
             # Crow like a rooster
-            slack_util.reply(slack, {}, "IT'S 10 PM!", in_thread=False, to_channel=channel_util.RANDOM)
+            slack_util.send_message(slack, "IT'S 10 PM!", channel_util.RANDOM)
 
             # Wait a while before trying it again, to prevent duplicates
             await asyncio.sleep(60)

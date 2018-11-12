@@ -5,14 +5,12 @@ from typing import Any, Optional, Generator, Match, Callable, List, Coroutine
 from slackclient import SlackClient
 from slackclient.client import SlackNotConnected
 
-import channel_util
-
 """
 Slack helpers. Separated for compartmentalization
 """
 
 
-def reply(slack: SlackClient, msg: dict, text: str, in_thread: bool = True, to_channel: str = None) -> None:
+def reply(slack: SlackClient, msg: dict, text: str, in_thread: bool = True, to_channel: str = None) -> dict:
     """
     Sends message with "text" as its content to the channel that message came from
     """
@@ -24,9 +22,22 @@ def reply(slack: SlackClient, msg: dict, text: str, in_thread: bool = True, to_c
     if in_thread:
         thread = (msg.get("thread_ts")  # In-thread case - get parent ts
                   or msg.get("ts"))  # Not in-thread case - get msg itself ts
-        slack.rtm_send_message(channel=to_channel, message=text, thread=thread)
+        return send_message(slack, text, to_channel, thread=thread)
     else:
-        slack.rtm_send_message(channel=to_channel, message=text)
+        return send_message(slack, text, to_channel)
+
+
+def send_message(slack: SlackClient, text: str, channel: str, thread: str = None, broadcast: bool = False) -> dict:
+    """
+    Copy of the internal send message function of slack
+    """
+    kwargs = {"channel": channel, "text": text}
+    if thread:
+        kwargs["thread_ts"] = thread
+        if broadcast:
+            kwargs["reply_broadcast"] = True
+
+    return slack.api_call("chat.postMessage", **kwargs)
 
 
 def im_channel_for_id(slack: SlackClient, user_id: str) -> Optional[str]:
@@ -37,29 +48,6 @@ def im_channel_for_id(slack: SlackClient, user_id: str) -> Optional[str]:
             if channel["is_im"] and channel["user"] == user_id:
                 return channel["id"]
     return None
-
-
-class SlackDebugCondom(object):
-    def __init__(self, actual_slack: SlackClient):
-        self.actual_slack = actual_slack
-
-    def __getattribute__(self, name: str) -> Any:
-        # Specialized behaviour
-        if name == "rtm_send_message":
-            # Flub some args
-            def override_send_message(*args, **kwargs):
-                print("Overriding: {} {}".format(args, kwargs))
-                kwargs["channel"] = channel_util.BOTZONE
-                kwargs["thread"] = None
-                self.actual_slack.rtm_send_message(*args, **kwargs)
-
-            return override_send_message
-        else:
-            # Default behaviour. Try to give the self first, elsewise give the child
-            try:
-                return super(SlackDebugCondom, self).__getattribute__(name)
-            except AttributeError:
-                return self.actual_slack.__getattribute__(name)
 
 
 def message_stream(slack: SlackClient) -> Generator[dict, None, None]:
@@ -93,12 +81,28 @@ MsgAction = Coroutine[Any, Any, None]
 Callback = Callable[[SlackClient, dict, Match], MsgAction]
 
 
-class Hook(object):
+class DeadHook(Exception):
+    pass
+
+
+class AbsHook(object):
+    def __init__(self, consumes_applicable: bool):
+        # Whether or not messages that yield a coroutine should not be checked further
+        self.consumes = consumes_applicable
+
+    def try_apply(self, slack: SlackClient, msg: dict) -> Optional[Coroutine[None, None, None]]:
+        raise NotImplementedError()
+
+
+class Hook(AbsHook):
     def __init__(self,
                  callback: Callback,
                  pattern: str,
                  channel_whitelist: Optional[List[str]] = None,
-                 channel_blacklist: Optional[List[str]] = None):
+                 channel_blacklist: Optional[List[str]] = None,
+                 consumer: bool = True):
+        super(Hook, self).__init__(consumer)
+
         # Save all
         self.pattern = pattern
         self.channel_whitelist = channel_whitelist
@@ -114,7 +118,7 @@ class Hook(object):
         else:
             raise Exception("Cannot whitelist and blacklist")
 
-    def check(self, msg: dict) -> Optional[Match]:
+    def try_apply(self, slack: SlackClient, msg: dict) -> Optional[Coroutine[None, None, None]]:
         """
         Returns whether a message should be handled by this dict, returning a Match if so, or None
         """
@@ -134,9 +138,6 @@ class Hook(object):
             # print("Hit blacklist")
             return None
 
-        return match
-
-    def invoke(self, slack: SlackClient, msg: dict, match: Match):
         return self.callback(slack, msg, match)
 
 

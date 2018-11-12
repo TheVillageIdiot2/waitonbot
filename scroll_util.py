@@ -4,6 +4,7 @@ Only really kept separate for neatness sake.
 """
 
 import re
+from dataclasses import dataclass
 from typing import List, Optional, Match
 
 from fuzzywuzzy import process
@@ -11,17 +12,17 @@ from slackclient import SlackClient
 
 import slack_util
 
+# Use this if we can't figure out who a brother actually is
+MISSINGBRO_SCROLL = 0
 
+
+@dataclass
 class Brother(object):
     """
     Represents a brother.
     """
-    def __init__(self, name: str, scroll: int):
-        self.name = name
-        self.scroll = scroll
-
-    def __repr__(self):
-        return "<Brother {}-{}>".format(self.name, self.scroll)
+    name: str
+    scroll: int
 
 
 # load the family tree
@@ -32,7 +33,7 @@ brother_match = re.compile(r"([0-9]*)~(.*)")
 brothers_matches = [brother_match.match(line) for line in familyfile]
 brothers_matches = [m for m in brothers_matches if m]
 brothers: List[Brother] = [Brother(m.group(2), int(m.group(1))) for m in brothers_matches]
-
+recent_brothers: List[Brother] = brothers[700:]
 
 async def scroll_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     """
@@ -81,23 +82,32 @@ class BadName(Exception):
                "match ratio {}. Please type name better.".format(self.name, self.score, self.threshold)
 
 
-def find_by_name(name: str, threshold: Optional[float] = None) -> Brother:
+def find_by_name(name: str, threshold: Optional[float] = None, recent_only: bool=False) -> Brother:
     """
     Looks up a brother by name. Raises exception if threshold provided and not met.
 
     :param threshold: Minimum match ratio to accept. Can be none.
     :param name: The name to look up, with a fuzzy search
+    :param recent_only: Whether or not to only search more recent undergrad brothers.
     :return: The best-match brother
     """
-    # Really quikly mog name into Brother, so the processor function works fine
-    name_bro = Brother(name, -1)
+    # Pick a list
+    if recent_only:
+        bros_to_use = recent_brothers
+    else:
+        bros_to_use = brothers
+
+    # Get all of the names
+    all_names = [b.name for b in bros_to_use]
 
     # Do fuzzy match
-    found = process.extractOne(name_bro, brothers, processor=lambda b: b.name)
-    if (not threshold) or found[1] > threshold:
-        return found[0]
+    found, score = process.extractOne(name, all_names)
+    score = score / 100.0
+    if (not threshold) or score > threshold:
+        found_index = all_names.index(found)
+        return bros_to_use[found_index]
     else:
-        raise BadName(name, found[1], threshold)
+        raise BadName(found, score, threshold)
 
 
 scroll_hook = slack_util.Hook(scroll_callback, pattern=r"scroll\s+(.*)")
