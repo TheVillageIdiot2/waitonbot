@@ -1,5 +1,5 @@
 import re
-from time import sleep
+from time import sleep, time
 from typing import Any, Optional, Generator, Match, Callable, List, Coroutine
 
 from slackclient import SlackClient
@@ -141,10 +141,47 @@ class Hook(AbsHook):
         return self.callback(slack, msg, match)
 
 
+class ReplyWaiter(AbsHook):
+    """
+    A special hook that only cares about replies to a given message.
+    """
+
+    def __init__(self, callback: Callback, pattern: str, thread_ts: str, lifetime: float):
+        super().__init__(True)
+        self.callback = callback
+        self.pattern = pattern
+        self.thread_ts = thread_ts
+        self.lifetime = lifetime
+        self.start_time = time()
+        self.dead = False
+
+    def try_apply(self, slack: SlackClient, msg: dict) -> Optional[Coroutine[None, None, None]]:
+        # First check: are we dead of age yet?
+        time_alive = time() - self.start_time
+        should_expire = time_alive < self.lifetime
+
+        # If so, give up the ghost
+        if self.dead or should_expire:
+            raise DeadHook()
+
+        # Otherwise proceed normally
+        # Is the msg the one we care about? If not, ignore
+        if msg.get("thread_ts", None) != self.thread_ts:
+            return None
+
+        # Does it match the regex? if not, ignore
+        match = re.match(self.pattern, msg['text'], flags=re.IGNORECASE)
+        if match:
+            return self.callback(slack, msg, match)
+        else:
+            return None
+
+
 class Passive(object):
     """
     Base class for Periodical tasks, such as reminders and stuff
     """
+
     async def run(self, slack: SlackClient) -> None:
         # Run this passive routed through the specified slack client.
         raise NotImplementedError()

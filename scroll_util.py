@@ -35,6 +35,7 @@ brothers_matches = [m for m in brothers_matches if m]
 brothers: List[Brother] = [Brother(m.group(2), int(m.group(1))) for m in brothers_matches]
 recent_brothers: List[Brother] = brothers[700:]
 
+
 async def scroll_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     """
     Finds the scroll of a brother, or the brother of a scroll, based on msg text.
@@ -54,7 +55,7 @@ async def scroll_callback(slack: SlackClient, msg: dict, match: Match) -> None:
         result = "Couldn't find brother {}".format(query)
 
     # Respond
-    slack_util.reply(slack, msg, result)
+    print(slack_util.reply(slack, msg, result))
 
 
 def find_by_scroll(scroll: int) -> Optional[Brother]:
@@ -82,7 +83,7 @@ class BadName(Exception):
                "match ratio {}. Please type name better.".format(self.name, self.score, self.threshold)
 
 
-def find_by_name(name: str, threshold: Optional[float] = None, recent_only: bool=False) -> Brother:
+def find_by_name(name: str, threshold: Optional[float] = None, recent_only: bool = False) -> Brother:
     """
     Looks up a brother by name. Raises exception if threshold provided and not met.
 
@@ -110,4 +111,4 @@ def find_by_name(name: str, threshold: Optional[float] = None, recent_only: bool
         raise BadName(found, score, threshold)
 
 
-scroll_hook = slack_util.Hook(scroll_callback, pattern=r"scroll\s+(.*)")
+scroll_hook = slack_util.Hook(scroll_callback, pattern=r"testscroll\s+(.*)")

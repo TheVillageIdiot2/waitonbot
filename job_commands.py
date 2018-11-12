@@ -63,11 +63,9 @@ def do_signoff(slack: SlackClient, msg: dict, on_assign_index: int, by_brother: 
     house_management.export_points(headers, points)
 
     # Then we respond cool!
-    slack_util.reply(slack, msg, "{} signed off {} for {} {} {}".format(on_assign.signer.name,
-                                                                        on_assign.assignee.name,
-                                                                        on_assign.job.house,
-                                                                        on_assign.job.day_of_week,
-                                                                        on_assign.job.name))
+    slack_util.reply(slack, msg, "{} signed off {} for {}".format(on_assign.signer.name,
+                                                                  on_assign.assignee.name,
+                                                                  on_assign.job.pretty_fmt()))
     alert_user(slack, on_assign.assignee, "Your house job was signed off")
 
 
@@ -108,7 +106,6 @@ async def signoff_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     if len(closest_assigns) == 0:
         slack_util.reply(slack, msg, "Unable to find any jobs assigned to brother {} "
                                      "(identified as {}).".format(signee_name, signee.name))
-        return
 
     # If theres only one job, sign it off
     elif len(closest_assigns) == 1:
@@ -118,12 +115,37 @@ async def signoff_callback(slack: SlackClient, msg: dict, match: Match) -> None:
         targ_assign_index = assigns.index(targ_assign)
 
         do_signoff(slack, msg, targ_assign_index, signer)
-        return
 
     # If theres multiple jobs, we need to get a follow up!
     else:
-        slack_util.reply(slack, msg, "Dunno how to handle multiple jobs yet")
-        return
+        # Say we need more info
+        job_list = "\n".join("{}: {}".format(i, a.job.pretty_fmt()) for i, a in enumerate(closest_assigns))
+        slack_util.reply(slack, msg, "Multiple sign off options dectected for brother {}.\n"
+                                     "Please enter the number corresponding to the job you wish to "
+                                     "sign off:\n{}\nIf you do not respond within 60 seconds, the signoff will "
+                                     "expire.".format(signee_name, job_list))
+
+        # Establish a follow up command pattern
+        pattern = r"\d+"
+
+        # Make the follow up callback
+        async def foc(_slack: SlackClient, _msg: dict, _match: Match) -> None:
+            # Get the number out
+            index = int(_match.group(0))
+
+            # Check that its valid
+            if 0 <= index < len(closest_assigns):
+                # We now know what we're trying to sign off!
+                specific_targ_assign = closest_assigns[index]
+                specific_targ_assign_index = assigns.index(specific_targ_assign)
+                do_signoff(_slack, _msg, specific_targ_assign_index, signer)
+            else:
+                # They gave a bad index, or we were unable to find the assignment again.
+                slack_util.reply(_slack, _msg, "Invalid job index / job unable to be found. Start over from the "
+                                               "signoff step.")
+
+        # Make a listener hook
+        slack_util.ReplyWaiter(foc, pattern, msg["ts"], 60)
 
 
 # noinspection PyUnusedLocal
@@ -191,12 +213,12 @@ async def nag_callback(slack, msg, match):
 
 
 signoff_hook = slack_util.Hook(signoff_callback,
-                               pattern=r"testsignoff\s+(.*)",
+                               pattern=r"signoff\s+(.*)",
                                channel_whitelist=[channel_util.HOUSEJOBS])
 
 reset_hook = slack_util.Hook(reset_callback,
-                             pattern=r"testreset signoffs",
-                             channel_whitelist=[channel_util.COMMAND_CENTER_ID])  # COMMAND_CENTER_ID
+                             pattern=r"reset signoffs",
+                             channel_whitelist=[channel_util.COMMAND_CENTER_ID])
 
 nag_hook = slack_util.Hook(nag_callback,
                            pattern=r"nagjobs\s*(.*)",

@@ -70,6 +70,7 @@ class ClientWrapper(object):
             # Strip garbage
             msg['text'] = msg['text'].strip()
             print("Recv: \"{}\"".format(msg['text']))
+            print(msg)
 
             # Msg is good
             # Find which hook, if any, satisfies

@@ -36,6 +36,9 @@ class Job(object):
     # Extra stuff, interpreted
     day: Optional[date]
 
+    def pretty_fmt(self) -> str:
+        return "{} - {} at {}".format(self.name, self.day_of_week, self.house)
+
 
 @dataclass
 class JobAssignment(object):
@@ -52,7 +55,6 @@ class JobAssignment(object):
         signer_name = self.signer.name if self.signer is not None else SIGNOFF_PLACEHOLDER
         late = "y" if self.late else "n"
         return self.job.name, self.job.house, self.job.day_of_week, self.assignee.name, signer_name, late
-
 
 @dataclass
 class PointStatus(object):
