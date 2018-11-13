@@ -44,7 +44,7 @@ def main() -> None:
     # wrap.add_hook(slack_util.Hook(help_callback, pattern=management_commands.bot_help_pattern))
 
     # Add boozebot
-    wrap.add_passive(periodicals.ItsTenPM())
+    # wrap.add_passive(periodicals.ItsTenPM())
 
     event_loop = asyncio.get_event_loop()
     event_loop.set_debug(True)
