@@ -111,4 +111,4 @@ def find_by_name(name: str, threshold: Optional[float] = None, recent_only: bool
         raise BadName(found, score, threshold)
 
 
-scroll_hook = slack_util.Hook(scroll_callback, pattern=r"testscroll\s+(.*)")
+scroll_hook = slack_util.Hook(scroll_callback, pattern=r"scroll\s+(.*)")
