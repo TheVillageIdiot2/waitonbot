@@ -6,7 +6,7 @@ from typing import Tuple, List, Optional, Any
 import google_api
 import scroll_util
 
-SHEET_ID = "1lPj9GjB00BuIq9GelOWh5GmiGsheLlowPnHLnWBvMOM"
+SHEET_ID = "1f9p4H7TWPm8rAM4v_qr2Vc6lBiFNEmR-quTY9UtxEBI"
 
 # Note: These ranges use named range feature of google sheets.
 # To edit range of jobs, edit the named range in Data -> Named Ranges
@@ -49,12 +49,15 @@ class JobAssignment(object):
     assignee: scroll_util.Brother
     signer: Optional[scroll_util.Brother]
     late: bool
+    bonus: bool
 
-    def to_raw(self) -> Tuple[str, str, str, str, str, str]:
+    def to_raw(self) -> Tuple[str, str, str, str, str, str, str]:
         # Converts this back into a spreadsheet row
         signer_name = self.signer.name if self.signer is not None else SIGNOFF_PLACEHOLDER
         late = "y" if self.late else "n"
-        return self.job.name, self.job.house, self.job.day_of_week, self.assignee.name, signer_name, late
+        bonus = "y" if self.bonus else "n"
+        return self.job.name, self.job.house, self.job.day_of_week, self.assignee.name, signer_name, late, bonus
+
 
 @dataclass
 class PointStatus(object):
@@ -95,10 +98,12 @@ def import_assignments() -> List[Optional[JobAssignment]]:
     # None-out invalid rows (length not at least 4, which includes the 4 most important features)
     def fixer(row):
         if len(row) == 4:
-            return strip_all(row + [SIGNOFF_PLACEHOLDER, "n"])
+            return strip_all(row + [SIGNOFF_PLACEHOLDER, "n", "n"])
         elif len(row) == 5:
-            return strip_all(row + "n")
+            return strip_all(row + ["n", "n"])
         elif len(row) == 6:
+            return strip_all(row + ["n"])
+        elif len(row) == 7:
             return strip_all(row)
         else:
             return None
@@ -113,7 +118,7 @@ def import_assignments() -> List[Optional[JobAssignment]]:
             assignments.append(None)
         else:
             # Breakout list
-            job_name, location, day, assignee, signer, late = row
+            job_name, location, day, assignee, signer, late, bonus = row
 
             # Figure out when the day actually is, in terms of the date class
             day_rank = {
@@ -165,8 +170,11 @@ def import_assignments() -> List[Optional[JobAssignment]]:
             # Make late a bool
             late = late == "y"
 
+            # Ditto for bonus
+            bonus = bonus == "y"
+
             # Create the assignment
-            assignment = JobAssignment(job=job, assignee=assignee, signer=signer, late=late)
+            assignment = JobAssignment(job=job, assignee=assignee, signer=signer, late=late, bonus=bonus)
 
             # Append to job/assignment lists
             assignments.append(assignment)
@@ -180,7 +188,7 @@ def export_assignments(assigns: List[Optional[JobAssignment]]) -> None:
     rows = []
     for v in assigns:
         if v is None:
-            rows.append([""] * 6)
+            rows.append([""] * 7)
         else:
             rows.append(list(v.to_raw()))
 

@@ -217,7 +217,7 @@ async def nag_callback(slack, msg, match):
 
 signoff_hook = slack_util.Hook(signoff_callback,
                                pattern=r"signoff\s+(.*)",
-                               channel_whitelist=[channel_util.HOUSEJOBS])
+                               channel_whitelist=[channel_util.BOTZONE])
 
 reset_hook = slack_util.Hook(reset_callback,
                              pattern=r"reset signoffs",
