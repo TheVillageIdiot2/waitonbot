@@ -184,7 +184,7 @@ async def nag_callback(slack, msg, match):
     assigns = house_management.import_assignments()
 
     # Filter to day
-    assigns = [assign for assign in assigns if assign.job.day_of_week.lower() == day]
+    assigns = [assign for assign in assigns if assign is not None and assign.job.day_of_week.lower() == day]
 
     # Filter signed off
     assigns = [assign for assign in assigns if assign.signer is None]

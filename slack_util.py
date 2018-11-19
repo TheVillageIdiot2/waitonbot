@@ -62,7 +62,7 @@ def message_stream(slack: SlackClient) -> Generator[dict, None, None]:
             if slack.rtm_connect(with_team_state=False, auto_reconnect=True):
                 print("Waiting for messages")
                 while True:
-                    sleep(1)
+                    sleep(0.1)
                     update = slack.rtm_read()
                     for item in update:
                         if item.get('type') == 'message':
