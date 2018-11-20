@@ -64,8 +64,7 @@ class PointStatus(object):
     """
     Tracks a brothers points
     """
-    brother_raw: str
-    brother: scroll_util.Brother  # Interpereted
+    brother: scroll_util.Brother
     job_points: float = 0
     signoff_points: float = 0
     towel_points: float = 0
@@ -77,7 +76,7 @@ class PointStatus(object):
         def fmt(x: float):
             return round(x, 2)
 
-        return (self.brother_raw,
+        return (self.brother.name,
                 fmt(self.job_points),
                 fmt(self.signoff_points),
                 fmt(self.towel_points),
@@ -216,7 +215,8 @@ async def import_points() -> (List[str], List[PointStatus]):
             return None
 
         # Ensure its the proper length
-        row: List[Any] = row + ([0] * (field_count - len(row) - 1))
+        while len(row) < field_count:
+            row: List[Any] = row + [0]
 
         # Ensure all past the first column are float. If can't convert, make 0
         for i in range(1, len(row)):
@@ -227,10 +227,13 @@ async def import_points() -> (List[str], List[PointStatus]):
             row[i] = x
 
         # Get the brother for the last item
-        real_brother = await scroll_util.find_by_name(row[0])
+        try:
+            brother = await scroll_util.find_by_name(row[0])
+        except scroll_util.BrotherNotFound:
+            brother = scroll_util.Brother(row[0], scroll_util.MISSINGBRO_SCROLL)
 
         # Ok! Now, we just map it directly to a PointStatus
-        status = PointStatus(row[0], real_brother, *(row[1:]))
+        status = PointStatus(brother, *(row[1:]))
         return status
 
     # Perform conversion and return

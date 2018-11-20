@@ -18,7 +18,7 @@ MIN_RATIO = 0.8
 
 def alert_user(slack: SlackClient, brother: scroll_util.Brother, saywhat: str) -> None:
     """
-    DM a brother saying something
+    DM a brother saying something. Wrapper around several simpler methods
     """
     # We do this as a for loop just in case multiple people reg. to same scroll for some reason (e.g. dup accounts)
     for slack_id in identifier.lookup_brother_userids(brother):
@@ -252,7 +252,7 @@ async def reset_callback(slack: SlackClient, msg: dict, match: Match) -> None:
 
     # Set to 0/default
     for i in range(len(points)):
-        new = house_management.PointStatus(brother_raw=points[i].brother_raw, brother=points[i].brother)
+        new = house_management.PointStatus(brother=points[i].brother)
         points[i] = new
 
     house_management.export_points(headers, points)
