@@ -137,7 +137,7 @@ class Hook(AbsHook):
         elif self.channel_whitelist is None:
             pass  # We leave as none to show no whitelisting in effect
         else:
-            raise Exception("Cannot whitelist and blacklist")
+            raise ValueError("Cannot whitelist and blacklist")
 
     def try_apply(self, slack: SlackClient, msg: dict) -> Optional[Coroutine[None, None, None]]:
         """
