@@ -164,7 +164,7 @@ async def import_assignments() -> List[Optional[JobAssignment]]:
                 if signer == SIGNOFF_PLACEHOLDER:
                     signer = None
                 else:
-                    signer = scroll_util.find_by_name(signer)
+                    signer = await scroll_util.find_by_name(signer)
             except scroll_util.BrotherNotFound:
                 # If we can't figure out the name
                 signer = None
