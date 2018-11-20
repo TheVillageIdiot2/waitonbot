@@ -160,9 +160,10 @@ async def signoff_callback(slack: SlackClient, msg: dict, match: Match) -> None:
 
     # Score by name similarity, only accepting non-assigned jobs
     def scorer(assign: house_management.JobAssignment):
-        r = fuzz.ratio(signee.name, assign.assignee.name)
-        if assign.signer is None and r > MIN_RATIO:
-            return r
+        if assign.assignee is not None:
+            r = fuzz.ratio(signee.name, assign.assignee.name)
+            if assign.signer is None and r > MIN_RATIO:
+                return r
 
     # Set the assigner, and notify
     def modifier(context: _ModJobContext):
@@ -187,9 +188,10 @@ async def late_callback(slack: SlackClient, msg: dict, match: Match) -> None:
 
     # Score by name similarity. Don't care if signed off or not
     def scorer(assign: house_management.JobAssignment):
-        r = fuzz.ratio(signee.name, assign.assignee.name)
-        if r > MIN_RATIO:
-            return r
+        if assign.assignee is not None:
+            r = fuzz.ratio(signee.name, assign.assignee.name)
+            if r > MIN_RATIO:
+                return r
 
     # Just set the assigner
     def modifier(context: _ModJobContext):
@@ -218,9 +220,10 @@ async def reassign_callback(slack: SlackClient, msg: dict, match: Match) -> None
     # Score by name similarity to the first brother. Don't care if signed off or not,
     # as we want to be able to transfer even after signoffs (why not, amirite?)
     def scorer(assign: house_management.JobAssignment):
-        r = fuzz.ratio(from_bro.name, assign.assignee.name)
-        if r > MIN_RATIO:
-            return r
+        if assign.assignee is not None:
+            r = fuzz.ratio(from_bro.name, assign.assignee.name)
+            if r > MIN_RATIO:
+                return r
 
     # Change the assignee
     def modifier(context: _ModJobContext):
@@ -291,6 +294,8 @@ async def nag_callback(slack, msg, match):
     response = "Do yer jerbs! They are as follows:\n"
     for assign in assigns:
         # Make the row template
+        if assign.assignee is None:
+            continue
         response += "({}) {} -- {} ".format(assign.job.house, assign.job.name, assign.assignee.name)
 
         # Find the people to @

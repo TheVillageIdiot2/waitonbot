@@ -46,7 +46,7 @@ class JobAssignment(object):
     Tracks a job's assignment and completion
     """
     job: Job
-    assignee: scroll_util.Brother
+    assignee: Optional[scroll_util.Brother]
     signer: Optional[scroll_util.Brother]
     late: bool
     bonus: bool
@@ -152,11 +152,14 @@ async def import_assignments() -> List[Optional[JobAssignment]]:
 
             # Now make an assignment for the job
             # Find the brother it is assigned to
-            try:
-                assignee = await scroll_util.find_by_name(assignee, SHEET_LOOKUP_THRESHOLD)
-            except scroll_util.BrotherNotFound:
-                # If we can't get one close enough, make a dummy
-                assignee = scroll_util.Brother(assignee, scroll_util.MISSINGBRO_SCROLL)
+            if assignee is not None and assignee != "" and assignee != "N/A":
+                try:
+                    assignee = await scroll_util.find_by_name(assignee, SHEET_LOOKUP_THRESHOLD)
+                except scroll_util.BrotherNotFound:
+                    # If we can't get one close enough, make a dummy
+                    assignee = scroll_util.Brother(assignee, scroll_util.MISSINGBRO_SCROLL)
+            else:
+                assignee = None
 
             # Find the brother who is currently listed as having signed it off
             try:
