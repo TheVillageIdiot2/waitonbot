@@ -13,7 +13,7 @@ import slack_util
 
 SHEET_ID = "1lPj9GjB00BuIq9GelOWh5GmiGsheLlowPnHLnWBvMOM"
 
-MIN_RATIO = 0.9
+MIN_RATIO = 0.8
 
 
 def alert_user(slack: SlackClient, brother: scroll_util.Brother, saywhat: str) -> None:
@@ -160,8 +160,9 @@ async def signoff_callback(slack: SlackClient, msg: dict, match: Match) -> None:
 
     # Score by name similarity, only accepting non-assigned jobs
     def scorer(assign: house_management.JobAssignment):
-        if assign.signer is None:
-            return fuzz.ratio(signee.name, assign.assignee.name)
+        r = fuzz.ratio(signee.name, assign.assignee.name)
+        if assign.signer is None and r > MIN_RATIO:
+            return r
 
     # Set the assigner, and notify
     def modifier(context: _ModJobContext):
@@ -186,7 +187,9 @@ async def late_callback(slack: SlackClient, msg: dict, match: Match) -> None:
 
     # Score by name similarity. Don't care if signed off or not
     def scorer(assign: house_management.JobAssignment):
-        return fuzz.ratio(signee.name, assign.assignee.name)
+        r = fuzz.ratio(signee.name, assign.assignee.name)
+        if r > MIN_RATIO:
+            return r
 
     # Just set the assigner
     def modifier(context: _ModJobContext):
