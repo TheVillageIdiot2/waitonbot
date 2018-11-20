@@ -51,10 +51,7 @@ async def scroll_callback(slack: SlackClient, msg: dict, match: Match) -> None:
         sn = int(query)
         result = find_by_scroll(sn)
     except ValueError:
-        try:
-            result = await find_by_name(query)
-        except BrotherNotFound:
-            pass
+        result = await find_by_name(query)
     if result:
         result = "Brother {} has scroll {}".format(result.name, result.scroll)
     else:
@@ -96,9 +93,9 @@ async def find_by_name(name: str, threshold: Optional[float] = None) -> Brother:
 
     # Do fuzzy match
     found, score = process.extractOne(name, all_names)
-    score = score / 100.0
     found_index = all_names.index(found)
     found_brother = brothers[found_index]
+    print(score)
     if (not threshold) or score > threshold:
         return found_brother
     else:

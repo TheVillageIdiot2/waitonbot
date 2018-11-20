@@ -13,7 +13,7 @@ import slack_util
 
 SHEET_ID = "1lPj9GjB00BuIq9GelOWh5GmiGsheLlowPnHLnWBvMOM"
 
-MIN_RATIO = 0.8
+MIN_RATIO = 80.0
 
 
 def alert_user(slack: SlackClient, brother: scroll_util.Brother, saywhat: str) -> None:

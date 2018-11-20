@@ -14,7 +14,7 @@ job_range = "AllJobs"  # Note that the first row is headers
 point_range = "PointRange"
 
 # How tolerant of spelling errors in names to be
-SHEET_LOOKUP_THRESHOLD = 0.8
+SHEET_LOOKUP_THRESHOLD = 80.0
 
 JOB_VAL = 1
 LATE_VAL = 0.5
