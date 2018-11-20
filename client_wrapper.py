@@ -1,5 +1,6 @@
 import asyncio
-from typing import List, Any, AsyncGenerator
+import traceback
+from typing import List, Any, AsyncGenerator, Coroutine, TypeVar
 
 from slackclient import SlackClient  # Obvious
 
@@ -13,6 +14,17 @@ api_file.close()
 
 # Enable to do single-threaded and have better exceptions
 DEBUG_MODE = False
+
+A, B, C = TypeVar("A"), TypeVar("B"), TypeVar("C")
+
+
+async def _loud_mouth(c: Coroutine[A, B, C]) -> Coroutine[A, B, C]:
+    # Print exceptions as they pass through
+    try:
+        return await c
+    except Exception:
+        traceback.print_exc()
+        raise
 
 
 class ClientWrapper(object):
@@ -81,7 +93,7 @@ class ClientWrapper(object):
                     # If we get a coro back, then task it up and set consumption appropriately
                     if coro is not None:
                         print("Spawned task")
-                        yield asyncio.create_task(coro)
+                        yield asyncio.create_task(_loud_mouth(coro))
                         if hook.consumes:
                             break
 
