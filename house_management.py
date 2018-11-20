@@ -72,15 +72,17 @@ class PointStatus(object):
     work_party_points: float = 0
     bonus_points: float = 0
 
-    def to_raw(self) -> Tuple[str, str, str, str, str, str]:
+    def to_raw(self) -> Tuple[str, float, float, float, float, float]:
         # Convert to a row. Also, do some rounding while we're at it
-        fstring = "{:.2f}"
+        def fmt(x: float):
+            return round(x, 2)
+
         return (self.brother_raw,
-                fstring.format(self.job_points),
-                fstring.format(self.signoff_points),
-                fstring.format(self.towel_points),
-                fstring.format(self.work_party_points),
-                fstring.format(self.bonus_points),
+                fmt(self.job_points),
+                fmt(self.signoff_points),
+                fmt(self.towel_points),
+                fmt(self.work_party_points),
+                fmt(self.bonus_points),
                 )
 
 
