@@ -204,6 +204,44 @@ async def late_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     await _mod_jobs(slack, msg, scorer, modifier)
 
 
+async def reassign_callback(slack: SlackClient, msg: dict, match: Match) -> None:
+    verb = slack_util.VerboseWrapper(slack, msg)
+
+    # Find out our two targets
+    from_name = match.group(1).strip()
+    to_name = match.group(2).strip()
+
+    # Get them as brothers
+    from_bro = await verb(scroll_util.find_by_name(from_name, MIN_RATIO))
+    to_bro = await verb(scroll_util.find_by_name(to_name, MIN_RATIO))
+
+    # Score by name similarity to the first brother. Don't care if signed off or not,
+    # as we want to be able to transfer even after signoffs (why not, amirite?)
+    def scorer(assign: house_management.JobAssignment):
+        r = fuzz.ratio(from_bro.name, assign.assignee.name)
+        if r > MIN_RATIO:
+            return r
+
+    # Change the assignee
+    def modifier(context: _ModJobContext):
+        context.assign.assignee = to_bro
+
+        # Say we did it
+        slack_util.reply(slack, msg, "Toggled lateness of {}.\n"
+                                     "Now marked as late: {}".format(context.assign.job.pretty_fmt(),
+                                                                     context.assign.late))
+
+        # Tell the people
+        reassign_msg = "Job {} reassigned from {} to {}".format(context.assign.job.pretty_fmt(),
+                                                                from_bro,
+                                                                to_bro)
+        alert_user(slack, from_bro, reassign_msg)
+        alert_user(slack, to_bro, reassign_msg)
+
+    # Fire it off
+    await _mod_jobs(slack, msg, scorer, modifier)
+
+
 # noinspection PyUnusedLocal
 async def reset_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     """
@@ -283,3 +321,7 @@ reset_hook = slack_util.Hook(reset_callback,
 nag_hook = slack_util.Hook(nag_callback,
                            pattern=r"nagjobs\s*(.*)",
                            channel_whitelist=[channel_util.COMMAND_CENTER_ID])
+
+reassign_hook = slack_util.Hook(reassign_callback,
+                                pattern=r"reassign\s+(.*?)\s+->\s+(.+)",
+                                channel_whitelist=[channel_util.HOUSEJOBS])
