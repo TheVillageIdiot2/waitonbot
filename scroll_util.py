@@ -13,7 +13,7 @@ from slackclient import SlackClient
 import slack_util
 
 # Use this if we can't figure out who a brother actually is
-MISSINGBRO_SCROLL = 0
+MISSINGBRO_SCROLL = -1
 
 
 @dataclass
@@ -23,6 +23,9 @@ class Brother(object):
     """
     name: str
     scroll: int
+
+    def is_valid(self):
+        return self.scroll is not MISSINGBRO_SCROLL
 
 
 # load the family tree
