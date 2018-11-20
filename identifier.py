@@ -3,12 +3,12 @@ Allows users to register their user account as a specific scroll
 """
 
 import shelve
-from typing import Optional, List, Match
+from typing import List, Match
 
 from slackclient import SlackClient
 
-import slack_util
 import scroll_util
+import slack_util
 
 # The following db maps SLACK_USER_ID -> SCROLL_INTEGER
 DB_NAME = "user_scrolls"
@@ -97,18 +97,20 @@ async def name_callback(slack, msg, match):
         slack_util.reply(slack, msg, result)
 
 
-def lookup_msg_brother(msg: dict) -> Optional[scroll_util.Brother]:
+async def lookup_msg_brother(msg: dict) -> scroll_util.Brother:
     """
     Finds the real-world name of whoever posted msg.
     Utilizes their bound-scroll.
+    :raises BrotherNotFound:
     :return: brother dict or None
     """
-    return lookup_slackid_brother(msg.get("user"))
+    return await lookup_slackid_brother(msg.get("user"))
 
 
-def lookup_slackid_brother(slack_id: str) -> Optional[scroll_util.Brother]:
+async def lookup_slackid_brother(slack_id: str) -> scroll_util.Brother:
     """
     Gets whatever brother the userid is registered to
+    :raises BrotherNotFound:
     :return: Brother object or None
     """
     with shelve.open(DB_NAME) as db:
@@ -116,7 +118,7 @@ def lookup_slackid_brother(slack_id: str) -> Optional[scroll_util.Brother]:
             scroll = db[slack_id]
             return scroll_util.find_by_scroll(scroll)
         except ValueError:
-            return None
+            raise scroll_util.BrotherNotFound("Slack id {} not tied to brother".format(slack_id))
 
 
 def lookup_brother_userids(brother: scroll_util.Brother) -> List[str]:

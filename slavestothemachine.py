@@ -8,6 +8,8 @@ import identifier
 import re
 import shelve
 
+from scroll_util import BrotherNotFound
+
 counted_data = ["flaked", "rolled", "replaced", "washed", "dried"]
 lookup_format = "{}\s+(\d+)"
 
@@ -25,7 +27,7 @@ async def count_work_callback(slack: SlackClient, msg: dict, match: Match) -> No
 
         # Couple things to work through.
         # One: Who sent the message?
-        who_wrote = identifier.lookup_msg_brother(msg)
+        who_wrote = await identifier.lookup_msg_brother(msg)
         who_wrote_label = "{} [{}]".format(who_wrote.name, who_wrote.scroll)
 
         # Two: What work did they do?
@@ -75,8 +77,9 @@ async def dump_work_callback(slack: SlackClient, msg: dict, match: Match) -> Non
             del db[user_id]
 
             # Get the name
-            brother = identifier.lookup_slackid_brother(user_id)
-            if brother is None:
+            try:
+                brother = await identifier.lookup_slackid_brother(user_id)
+            except BrotherNotFound:
                 brother = user_id
             else:
                 brother = brother.name

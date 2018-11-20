@@ -23,7 +23,7 @@ async def reboot_callback(slack: SlackClient, msg: dict, match: Match) -> None:
 
 
 # Make hooks
-bot_help_pattern = r"bot help"  # Can't init this directly, as it relies on us knowing all other hooks. handle in main
+bot_help_pattern = r"help"  # Can't init this directly, as it relies on us knowing all other hooks. handle in main
 reboot_hook = slack_util.Hook(reboot_callback,
                               pattern=r"reboot",
                               channel_whitelist=[channel_util.COMMAND_CENTER_ID])

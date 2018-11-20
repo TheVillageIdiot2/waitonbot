@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import List, Match, Callable, TypeVar, Optional, Iterable
 
 from fuzzywuzzy import fuzz
@@ -32,100 +33,100 @@ def alert_user(slack: SlackClient, brother: scroll_util.Brother, saywhat: str) -
 T = TypeVar("T")
 
 
-def tiemax(items: Iterable[T], key: Callable[[T], float], min_score: Optional[float] = None) -> List[T]:
+def tiemax(items: Iterable[T], key: Callable[[T], Optional[float]]) -> List[T]:
     best = []
-    best_score = min_score
+    best_score = None
     for elt in items:
+        # Compute the score
         score = key(elt)
-        if best_score is None or score > best_score:
+
+        # Ignore blank scores
+        if score is None:
+            continue
+        # Check if its the new best, wiping old if so
+        elif best_score is None or score > best_score:
             best_score = score
             best = [elt]
+        # Check if its same as last best
         elif score == best_score:
             best.append(elt)
     return best
 
 
-def do_signoff(slack: SlackClient, msg: dict, on_assign_index: int, by_brother: scroll_util.Brother) -> None:
-    # First things first: Get the signoffs
-    assignments = house_management.import_assignments()
-
-    # Get the one we want
-    on_assign = assignments[on_assign_index]
-
-    # Modify it
-    on_assign.signer = by_brother
-
-    # Put them all back
-    house_management.export_assignments(assignments)
-
-    # Then we update points for house jobs
-    headers, points = house_management.import_points()
-    house_management.apply_house_points(points, assignments)
-    house_management.export_points(headers, points)
-
-    # Then we respond cool!
-    slack_util.reply(slack, msg, "{} signed off {} for {}".format(on_assign.signer.name,
-                                                                  on_assign.assignee.name,
-                                                                  on_assign.job.pretty_fmt()))
-    alert_user(slack, on_assign.assignee, "{} signed you off for {}.".format(on_assign.signer.name,
-                                                                             on_assign.job.pretty_fmt()))
+@dataclass
+class _ModJobContext:
+    signer: scroll_util.Brother  # The brother invoking the command
+    assign: house_management.JobAssignment  # The job assignment to modify
 
 
-async def signoff_callback(slack: SlackClient, msg: dict, match: Match) -> None:
+async def _mod_jobs(slack: SlackClient,
+                    msg: dict,
+                    relevance_scorer: Callable[[house_management.JobAssignment], Optional[float]],
+                    modifier: Callable[[_ModJobContext], None],
+                    no_job_msg: str = None
+                    ) -> None:
     """
-    Callback to signoff a user.
+    Stub function that handles various tasks relating to modifying jobs
+    :param relevance_scorer: Function scores job assignments on relevance. Determines which gets modified
+    :param modifier: Callback function to modify a job. Only called on a successful operation, and only on one job
     """
-    # Find out who this is
-    signee_name = match.group(1)
+    # Make an error wrapper
+    verb = slack_util.VerboseWrapper(slack, msg)
 
-    # Fix with a quick lookup
-    try:
-        signee = scroll_util.find_by_name(signee_name, MIN_RATIO, recent_only=True)
-    except scroll_util.BadName as e:
-        slack_util.reply(slack, msg, e.as_response())
-        return
-
-    # Also, who just signed us off?
-    signer = identifier.lookup_msg_brother(msg)
+    # Who invoked this command?
+    signer = await verb(identifier.lookup_msg_brother(msg))
 
     # Get all of the assignments
-    assigns = house_management.import_assignments()
+    assigns = await verb(house_management.import_assignments())
 
-    # Find closest assignment to what we're after
-    def scorer(a: Optional[house_management.JobAssignment]) -> float:
+    # Find closest assignment to what we're after. This just wraps relevance_scorer to handle nones.
+    def none_scorer(a: Optional[house_management.JobAssignment]) -> Optional[float]:
         if a is None:
-            return 0
+            return None
         else:
-            return fuzz.ratio(signee.name, a.assignee.name)
+            return relevance_scorer(a)
 
-    closest_assigns = tiemax(assigns, key=scorer)
+    closest_assigns = tiemax(assigns, key=none_scorer)
 
-    # Remove those that are already signed off
-    closest_assigns = [c for c in closest_assigns if c is not None]
-    closest_assigns = [c for c in closest_assigns if c.signer is None]
+    # This is what we do on success. It will or won't be called immediately based on what's in closest_assigns
+    async def success_callback(targ_assign: house_management.JobAssignment) -> None:
+        # First get the most up to date version of the jobs
+        fresh_assigns = await verb(house_management.import_assignments())
+
+        # Find the one that matches what we had before
+        fresh_targ_assign = fresh_assigns[fresh_assigns.index(targ_assign)]
+
+        # Create the context
+        context = _ModJobContext(signer, fresh_targ_assign)
+
+        # Modify it
+        modifier(context)
+
+        # Re-upload
+        await house_management.export_assignments(fresh_assigns)
+
+        # Also import and update points
+        headers, points = await house_management.import_points()
+        house_management.apply_house_points(points, fresh_assigns)
+        house_management.export_points(headers, points)
 
     # If there aren't any jobs, say so
     if len(closest_assigns) == 0:
-        slack_util.reply(slack, msg, "Unable to find any jobs assigned to brother {} "
-                                     "(identified as {}).".format(signee_name, signee.name))
+        if no_job_msg is None:
+            no_job_msg = "Unable to find any jobs to apply this command to. Try again with better spelling or whatever."
+        slack_util.reply(slack, msg, no_job_msg)
 
     # If theres only one job, sign it off
     elif len(closest_assigns) == 1:
-        targ_assign = closest_assigns[0]
-
-        # Where is it?
-        targ_assign_index = assigns.index(targ_assign)
-
-        do_signoff(slack, msg, targ_assign_index, signer)
+        await success_callback(closest_assigns[0])
 
     # If theres multiple jobs, we need to get a follow up!
     else:
         # Say we need more info
         job_list = "\n".join("{}: {}".format(i, a.job.pretty_fmt()) for i, a in enumerate(closest_assigns))
-        slack_util.reply(slack, msg, "Multiple sign off options dectected for brother {}.\n"
-                                     "Please enter the number corresponding to the job you wish to "
-                                     "sign off:\n{}\nIf you do not respond within 60 seconds, the signoff will "
-                                     "expire.".format(signee_name, job_list))
+        slack_util.reply(slack, msg, "Multiple relevant job listings found.\n"
+                                     "Please enter the number corresponding to the job "
+                                     "you wish to modify:\n{}".format(job_list))
 
         # Establish a follow up command pattern
         pattern = r"\d+"
@@ -138,17 +139,66 @@ async def signoff_callback(slack: SlackClient, msg: dict, match: Match) -> None:
             # Check that its valid
             if 0 <= index < len(closest_assigns):
                 # We now know what we're trying to sign off!
-                specific_targ_assign = closest_assigns[index]
-                specific_targ_assign_index = assigns.index(specific_targ_assign)
-                do_signoff(_slack, _msg, specific_targ_assign_index, signer)
+                await success_callback(closest_assigns[index])
             else:
                 # They gave a bad index, or we were unable to find the assignment again.
-                slack_util.reply(_slack, _msg, "Invalid job index / job unable to be found. Start over from the "
-                                               "signoff step.")
+                slack_util.reply(_slack, _msg, "Invalid job index / job unable to be found.")
 
         # Make a listener hook
-        new_hook = slack_util.ReplyWaiter(foc, pattern, msg["ts"], 60)
+        new_hook = slack_util.ReplyWaiter(foc, pattern, msg["ts"], 120)
+
+        # Register it
         client_wrapper.get_client_wrapper().add_hook(new_hook)
+
+
+async def signoff_callback(slack: SlackClient, msg: dict, match: Match) -> None:
+    verb = slack_util.VerboseWrapper(slack, msg)
+
+    # Find out who we are trying to sign off is
+    signee_name = match.group(1)
+    signee = await verb(scroll_util.find_by_name(signee_name, MIN_RATIO))
+
+    # Score by name similarity, only accepting non-assigned jobs
+    def scorer(assign: house_management.JobAssignment):
+        if assign.signer is None:
+            return fuzz.ratio(signee.name, assign.assignee.name)
+
+    # Set the assigner, and notify
+    def modifier(context: _ModJobContext):
+        context.assign.signer = context.signer
+
+        # Say we did it wooo!
+        slack_util.reply(slack, msg, "Signed off {} for {}".format(context.assign.assignee.name,
+                                                                   context.assign.job.name))
+        alert_user(slack, context.assign.assignee, "{} signed you off for {}.".format(context.assign.signer.name,
+                                                                                      context.assign.job.pretty_fmt()))
+
+    # Fire it off
+    await _mod_jobs(slack, msg, scorer, modifier)
+
+
+async def late_callback(slack: SlackClient, msg: dict, match: Match) -> None:
+    verb = slack_util.VerboseWrapper(slack, msg)
+
+    # Find out who we are trying to sign off is
+    signee_name = match.group(1)
+    signee = await verb(scroll_util.find_by_name(signee_name, MIN_RATIO))
+
+    # Score by name similarity. Don't care if signed off or not
+    def scorer(assign: house_management.JobAssignment):
+        return fuzz.ratio(signee.name, assign.assignee.name)
+
+    # Just set the assigner
+    def modifier(context: _ModJobContext):
+        context.assign.late = not context.assign.late
+
+        # Say we did it
+        slack_util.reply(slack, msg, "Toggled lateness of {}.\n"
+                                     "Now marked as late: {}".format(context.assign.job.pretty_fmt(),
+                                                                     context.assign.late))
+
+    # Fire it off
+    await _mod_jobs(slack, msg, scorer, modifier)
 
 
 # noinspection PyUnusedLocal
@@ -167,11 +217,11 @@ async def reset_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     house_management.export_points(headers, points)
 
     # Now unsign everything
-    assigns = house_management.import_assignments()
+    assigns = await house_management.import_assignments()
     for a in assigns:
         if a is not None:
             a.signer = None
-    house_management.export_assignments(assigns)
+    await house_management.export_assignments(assigns)
 
     slack_util.reply(slack, msg, "Reset scores and signoffs")
 
@@ -181,7 +231,7 @@ async def nag_callback(slack, msg, match):
     day = match.group(1).lower().strip()
 
     # Get the assigns
-    assigns = house_management.import_assignments()
+    assigns = await house_management.import_assignments()
 
     # Filter to day
     assigns = [assign for assign in assigns if assign is not None and assign.job.day_of_week.lower() == day]
@@ -218,6 +268,10 @@ async def nag_callback(slack, msg, match):
 signoff_hook = slack_util.Hook(signoff_callback,
                                pattern=r"signoff\s+(.*)",
                                channel_whitelist=[channel_util.HOUSEJOBS])
+
+late_hook = slack_util.Hook(late_callback,
+                            pattern=r"marklate\s+(.*)",
+                            channel_whitelist=[channel_util.HOUSEJOBS])
 
 reset_hook = slack_util.Hook(reset_callback,
                              pattern=r"reset signoffs",

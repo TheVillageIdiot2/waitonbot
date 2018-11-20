@@ -5,14 +5,13 @@ from slackclient import SlackClient  # Obvious
 
 import channel_util
 import slack_util
-from dummy import FakeClient
 
 # Read the API token
 api_file = open("apitoken.txt", 'r')
 SLACK_API = next(api_file).strip()
 api_file.close()
 
-# Enable to use dummy
+# Enable to do single-threaded and have better exceptions
 DEBUG_MODE = False
 
 
@@ -25,10 +24,7 @@ class ClientWrapper(object):
 
     def __init__(self):
         # Init slack
-        if DEBUG_MODE:
-            self.slack = FakeClient()
-        else:
-            self.slack = SlackClient(SLACK_API)
+        self.slack = SlackClient(SLACK_API)
 
         # Hooks go regex -> callback on (slack, msg, match)
         self.hooks: List[slack_util.AbsHook] = []
@@ -53,7 +49,9 @@ class ClientWrapper(object):
         """
         Asynchronous tasks that eternally reads and responds to messages.
         """
-        async for _ in self.spool_tasks():
+        async for t in self.spool_tasks():
+            if DEBUG_MODE:
+                await t
             print("Handling a message...!")
 
     async def spool_tasks(self) -> AsyncGenerator[asyncio.Task, Any]:

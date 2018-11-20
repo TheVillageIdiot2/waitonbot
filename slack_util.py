@@ -1,4 +1,5 @@
 import re
+import typing
 from time import sleep, time
 from typing import Any, Optional, Generator, Match, Callable, List, Coroutine
 
@@ -75,6 +76,26 @@ def message_stream(slack: SlackClient) -> Generator[dict, None, None]:
 
         sleep(5)
         print("Connection failed - retrying")
+
+
+T = typing.TypeVar("T")
+
+
+class VerboseWrapper(Callable):
+    """
+    Generates exception-ready delegates.
+    Warns of exceptions as they are passed through it, via responding to the given message.
+    """
+    def __init__(self, slack: SlackClient, command_msg: dict):
+        self.slack = slack
+        self.command_msg = command_msg
+
+    async def __call__(self, awt: typing.Awaitable[T]) -> T:
+        try:
+            return await awt
+        except Exception as e:
+            reply(self.slack, self.command_msg, "Error: {}".format(str(e)), True)
+            raise e
 
 
 MsgAction = Coroutine[Any, Any, None]

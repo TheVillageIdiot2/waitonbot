@@ -33,7 +33,6 @@ brother_match = re.compile(r"([0-9]*)~(.*)")
 brothers_matches = [brother_match.match(line) for line in familyfile]
 brothers_matches = [m for m in brothers_matches if m]
 brothers: List[Brother] = [Brother(m.group(2), int(m.group(1))) for m in brothers_matches]
-recent_brothers: List[Brother] = brothers[700:]
 
 
 async def scroll_callback(slack: SlackClient, msg: dict, match: Match) -> None:
@@ -44,11 +43,15 @@ async def scroll_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     query = match.group(1).strip()
 
     # Try to get as int or by name
+    result = None
     try:
         sn = int(query)
         result = find_by_scroll(sn)
     except ValueError:
-        result = find_by_name(query)
+        try:
+            result = await find_by_name(query)
+        except BrotherNotFound:
+            pass
     if result:
         result = "Brother {} has scroll {}".format(result.name, result.scroll)
     else:
@@ -72,43 +75,36 @@ def find_by_scroll(scroll: int) -> Optional[Brother]:
 
 
 # Used to track a sufficiently shitty typed name
-class BadName(Exception):
-    def __init__(self, name: str, score: float, threshold: float):
-        self.name = name
-        self.score = score
-        self.threshold = threshold
-
-    def as_response(self) -> str:
-        return "Unable to perform operation. Best name match {} had a match score of {}, falling short of minimum " \
-               "match ratio {}. Please type name better.".format(self.name, self.score, self.threshold)
+class BrotherNotFound(Exception):
+    """Throw when we can't find the desired brother."""
+    pass
 
 
-def find_by_name(name: str, threshold: Optional[float] = None, recent_only: bool = False) -> Brother:
+async def find_by_name(name: str, threshold: Optional[float] = None) -> Brother:
     """
     Looks up a brother by name. Raises exception if threshold provided and not met.
 
     :param threshold: Minimum match ratio to accept. Can be none.
     :param name: The name to look up, with a fuzzy search
-    :param recent_only: Whether or not to only search more recent undergrad brothers.
+    :raises BrotherNotFound:
     :return: The best-match brother
-    """
-    # Pick a list
-    if recent_only:
-        bros_to_use = recent_brothers
-    else:
-        bros_to_use = brothers
-
-    # Get all of the names
-    all_names = [b.name for b in bros_to_use]
+    """    # Get all of the names
+    all_names = [b.name for b in brothers]
 
     # Do fuzzy match
     found, score = process.extractOne(name, all_names)
     score = score / 100.0
+    found_index = all_names.index(found)
+    found_brother = brothers[found_index]
     if (not threshold) or score > threshold:
-        found_index = all_names.index(found)
-        return bros_to_use[found_index]
+        return found_brother
     else:
-        raise BadName(found, score, threshold)
+        msg = "Couldn't find brother {}. Best match \"{}\" matched with accuracy {}, falling short of safety minimum " \
+              "accuracy {}. Please type name more accurately, to prevent misfires.".format(name,
+                                                                                           found_brother,
+                                                                                           score,
+                                                                                           threshold)
+        raise BrotherNotFound(msg)
 
 
 scroll_hook = slack_util.Hook(scroll_callback, pattern=r"scroll\s+(.*)")

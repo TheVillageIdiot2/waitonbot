@@ -88,7 +88,7 @@ def strip_all(l: List[str]) -> List[str]:
     return [x.strip() for x in l]
 
 
-def import_assignments() -> List[Optional[JobAssignment]]:
+async def import_assignments() -> List[Optional[JobAssignment]]:
     """
     Imports Jobs and JobAssignments from the sheet. 1:1 row correspondence.
     """
@@ -152,8 +152,8 @@ def import_assignments() -> List[Optional[JobAssignment]]:
             # Now make an assignment for the job
             # Find the brother it is assigned to
             try:
-                assignee = scroll_util.find_by_name(assignee, SHEET_LOOKUP_THRESHOLD)
-            except scroll_util.BadName:
+                assignee = await scroll_util.find_by_name(assignee, SHEET_LOOKUP_THRESHOLD)
+            except scroll_util.BrotherNotFound:
                 # If we can't get one close enough, make a dummy
                 assignee = scroll_util.Brother(assignee, scroll_util.MISSINGBRO_SCROLL)
 
@@ -163,7 +163,7 @@ def import_assignments() -> List[Optional[JobAssignment]]:
                     signer = None
                 else:
                     signer = scroll_util.find_by_name(signer)
-            except scroll_util.BadName:
+            except scroll_util.BrotherNotFound:
                 # If we can't figure out the name
                 signer = None
 
@@ -183,7 +183,7 @@ def import_assignments() -> List[Optional[JobAssignment]]:
     return assignments
 
 
-def export_assignments(assigns: List[Optional[JobAssignment]]) -> None:
+async def export_assignments(assigns: List[Optional[JobAssignment]]) -> None:
     # Smash to rows
     rows = []
     for v in assigns:
@@ -196,7 +196,7 @@ def export_assignments(assigns: List[Optional[JobAssignment]]) -> None:
     google_api.set_sheet_range(SHEET_ID, job_range, rows)
 
 
-def import_points() -> (List[str], List[PointStatus]):
+async def import_points() -> (List[str], List[PointStatus]):
     # Figure out how many things there are in a point status
     field_count = len(dataclasses.fields(PointStatus))
 
@@ -208,7 +208,7 @@ def import_points() -> (List[str], List[PointStatus]):
     point_rows = point_rows[1:]
 
     # Tidy rows up
-    def converter(row: List[Any]) -> Optional[PointStatus]:
+    async def converter(row: List[Any]) -> Optional[PointStatus]:
         # If its too long, or empty already, ignore
         if len(row) == 0 or len(row) > field_count:
             return None
@@ -225,14 +225,14 @@ def import_points() -> (List[str], List[PointStatus]):
             row[i] = x
 
         # Get the brother for the last item
-        real_brother = scroll_util.find_by_name(row[0], recent_only=True)
+        real_brother = await scroll_util.find_by_name(row[0])
 
         # Ok! Now, we just map it directly to a PointStatus
         status = PointStatus(row[0], real_brother, *(row[1:]))
         return status
 
     # Perform conversion and return
-    point_statuses = [converter(row) for row in point_rows]
+    point_statuses = [await converter(row) for row in point_rows]
     return headers, point_statuses
 
 
