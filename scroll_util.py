@@ -46,7 +46,6 @@ async def scroll_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     query = match.group(1).strip()
 
     # Try to get as int or by name
-    result = None
     try:
         sn = int(query)
         result = find_by_scroll(sn)
@@ -58,7 +57,7 @@ async def scroll_callback(slack: SlackClient, msg: dict, match: Match) -> None:
         result = "Couldn't find brother {}".format(query)
 
     # Respond
-    print(slack_util.reply(slack, msg, result))
+    slack_util.reply(slack, msg, result)
 
 
 def find_by_scroll(scroll: int) -> Optional[Brother]:
@@ -95,7 +94,6 @@ async def find_by_name(name: str, threshold: Optional[float] = None) -> Brother:
     found, score = process.extractOne(name, all_names)
     found_index = all_names.index(found)
     found_brother = brothers[found_index]
-    print(score)
     if (not threshold) or score > threshold:
         return found_brother
     else:

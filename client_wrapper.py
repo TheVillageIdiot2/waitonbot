@@ -64,7 +64,6 @@ class ClientWrapper(object):
         async for t in self.spool_tasks():
             if DEBUG_MODE:
                 await t
-            print("Handling a message...!")
 
     async def spool_tasks(self) -> AsyncGenerator[asyncio.Task, Any]:
         async for msg in self.async_message_feed():

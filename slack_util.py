@@ -146,17 +146,14 @@ class Hook(AbsHook):
         # Fail if pattern invalid
         match = re.match(self.pattern, msg['text'], flags=re.IGNORECASE)
         if match is None:
-            # print("Missed pattern")
             return None
 
         # Fail if whitelist defined, and we aren't there
         if self.channel_whitelist is not None and msg["channel"] not in self.channel_whitelist:
-            # print("Missed whitelist")
             return None
 
         # Fail if blacklist defined, and we are there
         if self.channel_blacklist is not None and msg["channel"] in self.channel_blacklist:
-            # print("Hit blacklist")
             return None
 
         return self.callback(slack, msg, match)
