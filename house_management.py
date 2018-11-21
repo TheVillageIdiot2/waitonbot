@@ -23,6 +23,7 @@ SIGNOFF_VAL = 0.1
 
 # What to put for a non-signed-off job
 SIGNOFF_PLACEHOLDER = "E-SIGNOFF"
+NOT_ASSIGNED = "N/A"
 
 
 @dataclass
@@ -56,7 +57,8 @@ class JobAssignment(object):
         signer_name = self.signer.name if self.signer is not None else SIGNOFF_PLACEHOLDER
         late = "y" if self.late else "n"
         bonus = "y" if self.bonus else "n"
-        return self.job.name, self.job.house, self.job.day_of_week, self.assignee.name, signer_name, late, bonus
+        assignee = self.assignee.name if self.assignee else NOT_ASSIGNED
+        return self.job.name, self.job.house, self.job.day_of_week, assignee, signer_name, late, bonus
 
 
 @dataclass
@@ -152,7 +154,7 @@ async def import_assignments() -> List[Optional[JobAssignment]]:
 
             # Now make an assignment for the job
             # Find the brother it is assigned to
-            if assignee is not None and assignee != "" and assignee != "N/A":
+            if assignee is not None and assignee != "" and assignee != NOT_ASSIGNED:
                 try:
                     assignee = await scroll_util.find_by_name(assignee, SHEET_LOOKUP_THRESHOLD)
                 except scroll_util.BrotherNotFound:
