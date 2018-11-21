@@ -9,6 +9,7 @@ import client_wrapper
 import identifier
 import job_commands
 import management_commands
+import periodicals
 import scroll_util
 import slack_util
 import slavestothemachine
@@ -48,6 +49,9 @@ def main() -> None:
 
     # Add boozebot
     # wrap.add_passive(periodicals.ItsTenPM())
+
+    # Add nagloop
+    wrap.add_passive(periodicals.RemindJobs())
 
     event_loop = asyncio.get_event_loop()
     event_loop.set_debug(True)
