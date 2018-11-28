@@ -73,7 +73,7 @@ async def help_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     "dump towel data" : Summarize the towel roller work for the week, and reset it.
     "signoff <John Doe>" : Sign off a brother's house job. Will prompt for more information if needed.
     "marklate <John Doe>" : Same as above, but to mark a job as being completed but having been done late.
-    IN PROGRESS: "reassign <John Doe> -> <James Deer>" : Reassign a house job.
+    "reassign <John Doe> -> <James Deer>" : Reassign a house job.
     "nagjobs <day>" : Notify in general the house jobs for the week.
     "reset signoffs" : Clear points for the week, and undo all signoffs. Not frequently useful.
     "help" : You stupid or something? You're reading it. This is all it does. What do you want from me?
