@@ -329,5 +329,5 @@ nag_hook = slack_util.Hook(nag_callback,
                            channel_whitelist=[channel_util.COMMAND_CENTER_ID])
 
 reassign_hook = slack_util.Hook(reassign_callback,
-                                pattern=r"reassign\s+(.*?)\s+->\s+(.+)",
+                                pattern=r"reassign\s+(.*?)-&gt;\s+(.+)",
                                 channel_whitelist=[channel_util.HOUSEJOBS])
