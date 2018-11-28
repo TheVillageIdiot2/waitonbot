@@ -8,7 +8,7 @@ do
   git pull
   echo "Press [CTRL+C] to stop..."
   sleep 1
-  python3 main.py
+  python3 -u main.py
   sleep 1
   echo "Died. Updating and restarting..."
 done
