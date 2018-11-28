@@ -231,9 +231,10 @@ async def reassign_callback(slack: SlackClient, msg: dict, match: Match) -> None
         context.assign.assignee = to_bro
 
         # Say we did it
-        slack_util.reply(slack, msg, "Toggled lateness of {}.\n"
-                                     "Now marked as late: {}".format(context.assign.job.pretty_fmt(),
-                                                                     context.assign.late))
+        reassign_msg = "Job {} reassigned from {} to {}".format(context.assign.job.pretty_fmt(),
+                                                                from_bro,
+                                                                to_bro)
+        slack_util.reply(slack, msg, reassign_msg)
 
         # Tell the people
         reassign_msg = "Job {} reassigned from {} to {}".format(context.assign.job.pretty_fmt(),
