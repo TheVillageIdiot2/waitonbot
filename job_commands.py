@@ -21,13 +21,14 @@ def alert_user(slack: SlackClient, brother: scroll_util.Brother, saywhat: str) -
     DM a brother saying something. Wrapper around several simpler methods
     """
     # We do this as a for loop just in case multiple people reg. to same scroll for some reason (e.g. dup accounts)
+    succ = False
     for slack_id in identifier.lookup_brother_userids(brother):
-        dm_id = slack_util.im_channel_for_id(slack, slack_id)
-        if dm_id:
-            # Give a dummy msg dict, since we won't actually be using anything in it
-            slack_util.send_message(slack, saywhat, dm_id)
-        else:
-            print("Warning: unable to find dm for brother {}".format(brother))
+        slack_util.send_message(slack, saywhat, slack_id)
+        succ = True
+
+    # Warn if we never find
+    if not succ:
+        print("Warning: unable to find dm for brother {}".format(brother))
 
 
 T = TypeVar("T")

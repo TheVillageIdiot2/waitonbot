@@ -85,11 +85,9 @@ class RemindJobs(slack_util.Passive):
                 # For each, send them a DM
                 success = False
                 for slack_id in assignee_ids:
-                    dm_id = slack_util.im_channel_for_id(slack, slack_id)
                     msg = "{}, you still need to do {}".format(a.assignee.name, a.job.pretty_fmt())
-                    if dm_id:
-                        success = True
-                        slack_util.send_message(slack, msg, dm_id)
+                    success = True
+                    slack_util.send_message(slack, msg, slack_id)
 
                 # Warn on failure
                 if not success:

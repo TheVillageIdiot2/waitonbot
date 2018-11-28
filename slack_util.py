@@ -41,16 +41,6 @@ def send_message(slack: SlackClient, text: str, channel: str, thread: str = None
     return slack.api_call("chat.postMessage", **kwargs)
 
 
-def im_channel_for_id(slack: SlackClient, user_id: str) -> Optional[str]:
-    conversations = slack.api_call("conversations.list", types="im")
-    if conversations["ok"]:
-        channels = conversations["channels"]
-        for channel in channels:
-            if channel["is_im"] and channel["user"] == user_id:
-                return channel["id"]
-    return None
-
-
 def message_stream(slack: SlackClient) -> Generator[dict, None, None]:
     """
     Generator that yields messages from slack.
