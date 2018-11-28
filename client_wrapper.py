@@ -99,7 +99,7 @@ class ClientWrapper(object):
                 except slack_util.DeadHook:
                     # If a hook wants to die, let it.
                     self.hooks.remove(hook)
-            print("Done spawning tasks")
+            print("Done spawning tasks. Now {} running total.".format(len(asyncio.all_tasks())))
 
     async def async_message_feed(self) -> AsyncGenerator[dict, None]:
         """
