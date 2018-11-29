@@ -188,6 +188,7 @@ class ReplyWaiter(AbsHook):
         # Does it match the regex? if not, ignore
         match = re.match(self.pattern, msg['text'], flags=re.IGNORECASE)
         if match:
+            self.dead = True
             return self.callback(slack, msg, match)
         else:
             return None
