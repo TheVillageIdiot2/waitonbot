@@ -54,7 +54,7 @@ def main() -> None:
     wrap.add_passive(periodicals.RemindJobs())
 
     event_loop = asyncio.get_event_loop()
-    event_loop.set_debug(True)
+    event_loop.set_debug(client_wrapper.DEBUG_MODE)
     message_handling = wrap.respond_messages()
     passive_handling = wrap.run_passives()
     both = asyncio.gather(message_handling, passive_handling)

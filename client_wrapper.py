@@ -5,6 +5,7 @@ from typing import List, Any, AsyncGenerator, Coroutine, TypeVar
 from slackclient import SlackClient  # Obvious
 
 import channel_util
+import sys
 import slack_util
 
 # Read the API token
@@ -62,6 +63,7 @@ class ClientWrapper(object):
         Asynchronous tasks that eternally reads and responds to messages.
         """
         async for t in self.spool_tasks():
+            sys.stdout.flush()
             if DEBUG_MODE:
                 await t
 
