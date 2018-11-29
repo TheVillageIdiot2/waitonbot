@@ -93,8 +93,8 @@ async def dump_work_callback(slack: SlackClient, msg: dict, match: Match) -> Non
 
 # Make dem HOOKs
 count_work_hook = slack_util.Hook(count_work_callback,
-                                  pattern=".*",
+                                  patterns=".*",
                                   channel_whitelist=[channel_util.SLAVES_TO_THE_MACHINE_ID])
 dump_work_hook = slack_util.Hook(dump_work_callback,
-                                 pattern="dump towel data",
+                                 patterns="dump towel data",
                                  channel_whitelist=[channel_util.COMMAND_CENTER_ID])

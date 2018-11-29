@@ -314,21 +314,33 @@ async def nag_callback(slack, msg, match):
 
 
 signoff_hook = slack_util.Hook(signoff_callback,
-                               pattern=r"signoff\s+(.*)",
+                               patterns=[
+                                   r"signoff\s+(.*)",
+                                   r"sign off\s+(.*)",
+                                   ],
                                channel_whitelist=[channel_util.HOUSEJOBS])
 
 late_hook = slack_util.Hook(late_callback,
-                            pattern=r"marklate\s+(.*)",
+                            patterns=[
+                                r"marklate\s+(.*)",
+                                r"mark late\s+(.*)",
+                                ],
                             channel_whitelist=[channel_util.HOUSEJOBS])
 
 reset_hook = slack_util.Hook(reset_callback,
-                             pattern=r"reset signoffs",
+                             patterns=[
+                                r"reset signoffs",
+                                r"reset sign offs",
+                                ],
                              channel_whitelist=[channel_util.COMMAND_CENTER_ID])
 
 nag_hook = slack_util.Hook(nag_callback,
-                           pattern=r"nagjobs\s*(.*)",
+                           patterns=[
+                               r"nagjobs\s+(.*)",
+                               r"nag jobs\s+(.*)"
+                               ],
                            channel_whitelist=[channel_util.COMMAND_CENTER_ID])
 
 reassign_hook = slack_util.Hook(reassign_callback,
-                                pattern=r"reassign\s+(.*?)-&gt;\s+(.+)",
+                                patterns=r"reassign\s+(.*?)-&gt;\s+(.+)",
                                 channel_whitelist=[channel_util.HOUSEJOBS])

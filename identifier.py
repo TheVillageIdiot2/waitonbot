@@ -138,7 +138,7 @@ def lookup_brother_userids(brother: scroll_util.Brother) -> List[str]:
         return result
 
 
-identify_hook = slack_util.Hook(identify_callback, pattern=r"my scroll is (.*)")
-identify_other_hook = slack_util.Hook(identify_other_callback, pattern=r"<@(.*)>\s+has scroll\s+(.*)")
-check_hook = slack_util.Hook(check_callback, pattern=r"what is my scroll")
-name_hook = slack_util.Hook(name_callback, pattern=r"what is my name")
+identify_hook = slack_util.Hook(identify_callback, patterns=r"my scroll is (.*)")
+identify_other_hook = slack_util.Hook(identify_other_callback, patterns=r"<@(.*)>\s+has scroll\s+(.*)")
+check_hook = slack_util.Hook(check_callback, patterns=r"what is my scroll")
+name_hook = slack_util.Hook(name_callback, patterns=r"what is my name")

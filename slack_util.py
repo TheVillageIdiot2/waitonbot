@@ -1,7 +1,6 @@
 import re
-import typing
 from time import sleep, time
-from typing import Any, Optional, Generator, Match, Callable, List, Coroutine
+from typing import Any, Optional, Generator, Match, Callable, List, Coroutine, Union, TypeVar, Awaitable
 
 from slackclient import SlackClient
 from slackclient.client import SlackNotConnected
@@ -68,7 +67,7 @@ def message_stream(slack: SlackClient) -> Generator[dict, None, None]:
         print("Connection failed - retrying")
 
 
-T = typing.TypeVar("T")
+T = TypeVar("T")
 
 
 class VerboseWrapper(Callable):
@@ -80,7 +79,7 @@ class VerboseWrapper(Callable):
         self.slack = slack
         self.command_msg = command_msg
 
-    async def __call__(self, awt: typing.Awaitable[T]) -> T:
+    async def __call__(self, awt: Awaitable[T]) -> T:
         try:
             return await awt
         except Exception as e:
@@ -108,14 +107,17 @@ class AbsHook(object):
 class Hook(AbsHook):
     def __init__(self,
                  callback: Callback,
-                 pattern: str,
+                 patterns: Union[str, List[str]],
                  channel_whitelist: Optional[List[str]] = None,
                  channel_blacklist: Optional[List[str]] = None,
                  consumer: bool = True):
         super(Hook, self).__init__(consumer)
 
         # Save all
-        self.pattern = pattern
+        if not isinstance(patterns, list):
+            patterns = [patterns]
+
+        self.patterns = patterns
         self.channel_whitelist = channel_whitelist
         self.channel_blacklist = channel_blacklist
         self.callback = callback
@@ -134,7 +136,12 @@ class Hook(AbsHook):
         Returns whether a message should be handled by this dict, returning a Match if so, or None
         """
         # Fail if pattern invalid
-        match = re.match(self.pattern, msg['text'], flags=re.IGNORECASE)
+        match = None
+        for p in self.patterns:
+            match = re.match(p, msg['text'], flags=re.IGNORECASE)
+            if match is not None:
+                break
+
         if match is None:
             return None
 
@@ -170,6 +177,7 @@ class ReplyWaiter(AbsHook):
 
         # If so, give up the ghost
         if self.dead or should_expire:
+            print("Reply waiter has expired after {} seconds".format(time_alive))
             raise DeadHook()
 
         # Otherwise proceed normally

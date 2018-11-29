@@ -45,7 +45,7 @@ def main() -> None:
     wrap.add_hook(job_commands.reassign_hook)
 
     # Add help
-    wrap.add_hook(slack_util.Hook(help_callback, pattern=management_commands.bot_help_pattern))
+    wrap.add_hook(slack_util.Hook(help_callback, patterns=[r"help", r"bot\s+help"]))
 
     # Add boozebot
     # wrap.add_passive(periodicals.ItsTenPM())
@@ -61,6 +61,7 @@ def main() -> None:
     event_loop.run_until_complete(both)
 
 
+# noinspection PyUnusedLocal
 async def help_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     slack_util.reply(slack, msg, textwrap.dedent("""
     Commands are as follows. Note that some only work in certain channels.
