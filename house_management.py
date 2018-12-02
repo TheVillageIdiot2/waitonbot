@@ -261,9 +261,10 @@ def apply_house_points(points: List[PointStatus], assigns: List[Optional[JobAssi
     Destroys existing values in the column.
     Should be called each time we re-export, for validations sake.
     """
-    # First, eliminate all house points
+    # First, eliminate all house points and signoff points
     for p in points:
         p.job_points = 0
+        p.signoff_points = 0
 
     # Then, apply each assign
     for a in assigns:
@@ -273,19 +274,19 @@ def apply_house_points(points: List[PointStatus], assigns: List[Optional[JobAssi
 
         # What modifier should this have?
         if a.signer is None:
-            score = MISS_VAL
+            job_score = MISS_VAL
         else:
             if a.late:
-                score = LATE_VAL
+                job_score = LATE_VAL
             else:
-                score = JOB_VAL
+                job_score = JOB_VAL
 
         # Find the corr bro in points
         for p in points:
-            # If we find, add the score and stop looking
+            # If we find assignee, add the score, but don't stop looking since we also need to find signer
             if p.brother == a.assignee:
-                p.job_points += score
-                break
+                p.job_points += job_score
 
+            # If we find the signer, add a signoff reward
             if p.brother == a.signer:
                 p.signoff_points += SIGNOFF_VAL
