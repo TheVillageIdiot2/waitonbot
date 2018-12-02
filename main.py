@@ -43,6 +43,7 @@ def main() -> None:
     wrap.add_hook(job_commands.reset_hook)
     wrap.add_hook(job_commands.nag_hook)
     wrap.add_hook(job_commands.reassign_hook)
+    wrap.add_hook(job_commands.refresh_hook)
 
     # Add help
     wrap.add_hook(slack_util.Hook(help_callback, patterns=[r"help", r"bot\s+help"]))
