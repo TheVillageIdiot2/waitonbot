@@ -252,7 +252,14 @@ async def reset_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     """
     Resets the scores.
     """
-    # Get curr rows
+    # Unassign everything
+    assigns = await house_management.import_assignments()
+    for a in assigns:
+        if a is not None:
+            a.signer = None
+    await house_management.export_assignments(assigns)
+
+    # Now wipe points
     headers, points = house_management.import_points()
 
     # Set to 0/default
@@ -260,16 +267,17 @@ async def reset_callback(slack: SlackClient, msg: dict, match: Match) -> None:
         new = house_management.PointStatus(brother=points[i].brother)
         points[i] = new
 
+    house_management.apply_house_points(points, await house_management.import_assignments())
     house_management.export_points(headers, points)
 
-    # Now unsign everything
-    assigns = await house_management.import_assignments()
-    for a in assigns:
-        if a is not None:
-            a.signer = None
-    await house_management.export_assignments(assigns)
-
     slack_util.reply(slack, msg, "Reset scores and signoffs")
+
+
+async def refresh_callback(slack: SlackClient, msg: dict, match: Match) -> None:
+    headers, points = await house_management.import_points()
+    house_management.apply_house_points(points, await house_management.import_assignments())
+    house_management.export_points(headers, points)
+    slack_util.reply(slack, msg, "Force updated point values")
 
 
 async def nag_callback(slack, msg, match):
@@ -344,3 +352,8 @@ nag_hook = slack_util.Hook(nag_callback,
 reassign_hook = slack_util.Hook(reassign_callback,
                                 patterns=r"reassign\s+(.*?)-&gt;\s+(.+)",
                                 channel_whitelist=[channel_util.HOUSEJOBS])
+
+refresh_hook = slack_util.Hook(refresh_callback,
+                               patterns="refresh points",
+                               channel_whitelist=[channel_util.COMMAND_CENTER_ID]
+                               )

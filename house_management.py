@@ -258,7 +258,8 @@ def export_points(headers: List[str], points: List[PointStatus]) -> None:
 def apply_house_points(points: List[PointStatus], assigns: List[Optional[JobAssignment]]):
     """
     Modifies the points list to reflect job assignment scores.
-    Destroys existing values in the column
+    Destroys existing values in the column.
+    Should be called each time we re-export, for validations sake.
     """
     # First, eliminate all house points
     for p in points:
