@@ -354,6 +354,9 @@ reassign_hook = slack_util.Hook(reassign_callback,
                                 channel_whitelist=[channel_util.HOUSEJOBS])
 
 refresh_hook = slack_util.Hook(refresh_callback,
-                               patterns="refresh points",
+                               patterns=[
+                                   "refresh points",
+                                   "update points"
+                                   ],
                                channel_whitelist=[channel_util.COMMAND_CENTER_ID]
                                )
