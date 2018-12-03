@@ -35,7 +35,7 @@ def main() -> None:
 
     # Add towel rolling
     wrap.add_hook(slavestothemachine.count_work_hook)
-    wrap.add_hook(slavestothemachine.dump_work_hook)
+    # wrap.add_hook(slavestothemachine.dump_work_hook)
 
     # Add job management
     wrap.add_hook(job_commands.signoff_hook)

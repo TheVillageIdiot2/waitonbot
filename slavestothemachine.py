@@ -1,19 +1,17 @@
+import re
+import textwrap
 from typing import Match
 
 from slackclient import SlackClient
 
 import channel_util
-import slack_util
+import house_management
 import identifier
-import re
-import shelve
-
-from scroll_util import BrotherNotFound
+import slack_util
+from scroll_util import Brother
 
 counted_data = ["flaked", "rolled", "replaced", "washed", "dried"]
 lookup_format = "{}\s+(\d+)"
-
-DB_NAME = "towels_rolled"
 
 
 def fmt_work_dict(work_dict: dict) -> str:
@@ -22,79 +20,76 @@ def fmt_work_dict(work_dict: dict) -> str:
 
 # noinspection PyUnusedLocal
 async def count_work_callback(slack: SlackClient, msg: dict, match: Match) -> None:
-    with shelve.open(DB_NAME) as db:
-        text = msg["text"].lower().strip()
+    # Make an error wrapper
+    verb = slack_util.VerboseWrapper(slack, msg)
 
-        # Couple things to work through.
-        # One: Who sent the message?
-        who_wrote = await identifier.lookup_msg_brother(msg)
-        who_wrote_label = "{} [{}]".format(who_wrote.name, who_wrote.scroll)
+    # Tidy the text
+    text = msg["text"].lower().strip()
 
-        # Two: What work did they do?
-        new_work = {}
-        for job in counted_data:
-            pattern = lookup_format.format(job)
-            match = re.search(pattern, text)
-            if match:
-                new_work[job] = int(match.group(1))
+    # Couple things to work through.
+    # One: Who sent the message?
+    who_wrote = await verb(identifier.lookup_msg_brother(msg))
+    who_wrote_label = "{} [{}]".format(who_wrote.name, who_wrote.scroll)
 
-        # Three: check if we found anything
-        if len(new_work) == 0:
-            if re.search(r'\s\d\s', text) is not None:
-                slack_util.reply(slack, msg,
-                                 "No work recognized. Use words {} or work will not be recorded".format(counted_data))
-            return
+    # Two: What work did they do?
+    new_work = {}
+    for job in counted_data:
+        pattern = lookup_format.format(job)
+        match = re.search(pattern, text)
+        if match:
+            new_work[job] = int(match.group(1))
 
-        # Three: Add it to their total work. We key by user_id, to avoid annoying identity shit
-        db_key = msg["user"]
-        old_work = db.get(db_key) or {}
-        total_work = dict(old_work)
+    # Three: check if we found anything
+    if len(new_work) == 0:
+        if re.search(r'\s\d\s', text) is not None:
+            slack_util.reply(slack, msg,
+                             "If you were trying to record work, it was not recognized.\n"
+                             "Use words {} or work will not be recorded".format(counted_data))
+        return
 
-        for job, count in new_work.items():
-            if job not in total_work:
-                total_work[job] = 0
-            total_work[job] += count
+    # Four: Knowing they did something, record to total work
+    contribution_count = sum(new_work.values())
+    new_total = await verb(record_towel_contribution(who_wrote, contribution_count))
 
-        # Save
-        db[db_key] = total_work
+    # Five, congratulate them on their work!
+    congrats = textwrap.dedent("""{} recorded work:
+    {}
+    Net increase in points: {}
+    Total points since last reset: {}""".format(who_wrote_label,
+                                                fmt_work_dict(new_work),
+                                                contribution_count,
+                                                new_total))
+    slack_util.reply(slack, msg, congrats)
 
-        # Four, congratulate them on their work
-        congrats = "{} recorded work:\n{}\nTotal work since last dump now\n{}".format(who_wrote_label,
-                                                                                      fmt_work_dict(new_work),
-                                                                                      fmt_work_dict(total_work))
-        slack_util.reply(slack, msg, congrats)
 
+async def record_towel_contribution(for_brother: Brother, contribution_count: int) -> int:
+    """
+    Grants <count> contribution point to the specified user.
+    Returns the new total.
+    """
+    # Import house points
+    headers, points = await house_management.import_points()
 
-# noinspection PyUnusedLocal
-async def dump_work_callback(slack: SlackClient, msg: dict, match: Match) -> None:
-    with shelve.open(DB_NAME) as db:
-        # Dump out each user
-        keys = db.keys()
-        result = ["All work:"]
-        for user_id in keys:
-            # Get the work
-            work = db[user_id]
-            del db[user_id]
+    # Find the brother
+    for p in points:
+        if p is None or p.brother != for_brother:
+            continue
 
-            # Get the name
-            try:
-                brother = await identifier.lookup_slackid_brother(user_id)
-            except BrotherNotFound:
-                brother = user_id
-            else:
-                brother = brother.name
+        # If found, mog with more points
+        p.towel_contribution_count += contribution_count
 
-            result.append("{} has done:\n{}".format(brother, fmt_work_dict(work)))
+        # Export
+        house_management.export_points(headers, points)
 
-        result.append("Database wiped. Next dump will show new work since the time of this message")
-        # Send it back
-        slack_util.reply(slack, msg, "\n".join(result))
+        # Return the new total
+        return p.towel_contribution_count
+
+    # If not found, get mad!
+    raise KeyError("No score entry found for brother {}".format(for_brother))
 
 
 # Make dem HOOKs
 count_work_hook = slack_util.Hook(count_work_callback,
                                   patterns=".*",
-                                  channel_whitelist=[channel_util.SLAVES_TO_THE_MACHINE_ID])
-dump_work_hook = slack_util.Hook(dump_work_callback,
-                                 patterns="dump towel data",
-                                 channel_whitelist=[channel_util.COMMAND_CENTER_ID])
+                                  channel_whitelist=[channel_util.SLAVES_TO_THE_MACHINE_ID],
+                                  consumer=False)

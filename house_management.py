@@ -20,6 +20,7 @@ JOB_VAL = 1
 LATE_VAL = 0.5
 MISS_VAL = -1
 SIGNOFF_VAL = 0.1
+TOWEL_VAL = 0.1
 
 # What to put for a non-signed-off job
 SIGNOFF_PLACEHOLDER = "E-SIGNOFF"
@@ -85,6 +86,14 @@ class PointStatus(object):
                 fmt(self.work_party_points),
                 fmt(self.bonus_points),
                 )
+
+    @property
+    def towel_contribution_count(self) -> int:
+        return round(self.towel_points / TOWEL_VAL)
+
+    @towel_contribution_count.setter
+    def towel_contribution_count(self, val: int) -> None:
+        self.towel_points = val * TOWEL_VAL
 
 
 def strip_all(l: List[str]) -> List[str]:
