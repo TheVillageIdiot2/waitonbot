@@ -180,6 +180,35 @@ async def signoff_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     await _mod_jobs(slack, msg, scorer, modifier)
 
 
+async def undo_callback(slack: SlackClient, msg: dict, match: Match) -> None:
+    verb = slack_util.VerboseWrapper(slack, msg)
+
+    # Find out who we are trying to sign off is
+    signee_name = match.group(1)
+    signee = await verb(scroll_util.find_by_name(signee_name, MIN_RATIO))
+
+    # Score by name similarity, only accepting jobs that are signed off
+    def scorer(assign: house_management.JobAssignment):
+        if assign.assignee is not None:
+            r = fuzz.ratio(signee.name, assign.assignee.name)
+            if assign.signer is not None and r > MIN_RATIO:
+                return r
+
+    # Set the assigner to be None, and notify
+    def modifier(context: _ModJobContext):
+        context.assign.signer = None
+
+        # Say we did it wooo!
+        slack_util.reply(slack, msg, "Undid signoff of {} for {}".format(context.assign.assignee.name,
+                                                                         context.assign.job.name))
+        alert_user(slack, context.assign.assignee, "{} undid your signoff off for {}.\n"
+                                                   "Must have been a mistake".format(context.assign.signer.name,
+                                                                                     context.assign.job.pretty_fmt()))
+
+    # Fire it off
+    await _mod_jobs(slack, msg, scorer, modifier)
+
+
 async def late_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     verb = slack_util.VerboseWrapper(slack, msg)
 
@@ -273,6 +302,7 @@ async def reset_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     slack_util.reply(slack, msg, "Reset scores and signoffs")
 
 
+# noinspection PyUnusedLocal
 async def refresh_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     headers, points = await house_management.import_points()
     house_management.apply_house_points(points, await house_management.import_assignments())
@@ -325,28 +355,36 @@ signoff_hook = slack_util.Hook(signoff_callback,
                                patterns=[
                                    r"signoff\s+(.*)",
                                    r"sign off\s+(.*)",
-                                   ],
+                               ],
                                channel_whitelist=[channel_util.HOUSEJOBS])
+
+undo_hook = slack_util.Hook(undo_callback,
+                            patterns=[
+                                r"unsignoff\s+(.*)",
+                                r"undosignoff\s+(.*)",
+                                r"undo signoff\s+(.*)",
+                            ],
+                            channel_whitelist=[channel_util.HOUSEJOBS])
 
 late_hook = slack_util.Hook(late_callback,
                             patterns=[
                                 r"marklate\s+(.*)",
                                 r"mark late\s+(.*)",
-                                ],
+                            ],
                             channel_whitelist=[channel_util.HOUSEJOBS])
 
 reset_hook = slack_util.Hook(reset_callback,
                              patterns=[
-                                r"reset signoffs",
-                                r"reset sign offs",
-                                ],
+                                 r"reset signoffs",
+                                 r"reset sign offs",
+                             ],
                              channel_whitelist=[channel_util.COMMAND_CENTER_ID])
 
 nag_hook = slack_util.Hook(nag_callback,
                            patterns=[
                                r"nagjobs\s+(.*)",
                                r"nag jobs\s+(.*)"
-                               ],
+                           ],
                            channel_whitelist=[channel_util.COMMAND_CENTER_ID])
 
 reassign_hook = slack_util.Hook(reassign_callback,
@@ -357,6 +395,6 @@ refresh_hook = slack_util.Hook(refresh_callback,
                                patterns=[
                                    "refresh points",
                                    "update points"
-                                   ],
+                               ],
                                channel_whitelist=[channel_util.COMMAND_CENTER_ID]
                                )

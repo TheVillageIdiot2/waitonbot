@@ -66,19 +66,20 @@ def main() -> None:
 async def help_callback(slack: SlackClient, msg: dict, match: Match) -> None:
     slack_util.reply(slack, msg, textwrap.dedent("""
     Commands are as follows. Note that some only work in certain channels.
-    "my scroll is <number>" : Registers your slack account to have a certain scroll, for the purpose of automatic dm's.
-    "@person has scroll <number>" : same as above, but for other users. Helpful if they are being obstinate.
+    "my scroll is number" : Registers your slack account to have a certain scroll, for the purpose of automatic dm's.
+    "@person has scroll number" : same as above, but for other users. Helpful if they are being obstinate.
     "what is my scroll" : Echos back what the bot thinks your scroll is. Largely for debugging.
     "what is my name" : Echos back what the bot thinks your name is. Largely for debugging. If you want to change this, you'll need to fix the "Sorted family tree" file that the bot reads. Sorry.
     "channel id #wherever" : Debug command to get a slack channels full ID
     "reboot" : Restarts the server.
-    "dump towel data" : Summarize the towel roller work for the week, and reset it.
-    "signoff <John Doe>" : Sign off a brother's house job. Will prompt for more information if needed.
-    "marklate <John Doe>" : Same as above, but to mark a job as being completed but having been done late.
-    "reassign <John Doe> -> <James Deer>" : Reassign a house job.
-    "nagjobs <day>" : Notify in general the house jobs for the week.
-    "reset signoffs" : Clear points for the week, and undo all signoffs. Not frequently useful.
-    "help" : You stupid or something? You're reading it. This is all it does. What do you want from me?
+    "signoff John Doe" : Sign off a brother's house job. Will prompt for more information if needed.
+    "marklate John Doe" : Same as above, but to mark a job as being completed but having been done late.
+    "reassign John Doe -> James Deer" : Reassign a house job.
+    "undo signoff John Doe" : Marks a brother's house job as incomplete. Useful if you fucked up.
+    "nagjobs day" : Notify in general the house jobs for the week.
+    "reset signoffs" : Clear points for the week, and undo all signoffs. Not frequently useful, admin only.
+    "refresh points" : Updates house job / signoff points for the week, after manual edits to the sheet. Admin only.
+    "help" : You're reading it. This is all it does. What do you want from me?
     
     ---
     
