@@ -27,5 +27,5 @@ async def channel_check_callback(slack: SlackClient, msg: dict, match: Match) ->
     slack_util.reply(slack, msg, response)
 
 
-channel_check_hook = slack_util.Hook(channel_check_callback,
-                                     patterns=r"channel id\s*(.*)")
+channel_check_hook = slack_util.ChannelHook(channel_check_callback,
+                                            patterns=r"channel id\s*(.*)")

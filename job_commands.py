@@ -149,7 +149,7 @@ async def _mod_jobs(slack: SlackClient,
         new_hook = slack_util.ReplyWaiter(foc, pattern, msg["ts"], 120)
 
         # Register it
-        client_wrapper.get_client_wrapper().add_hook(new_hook)
+        client_wrapper.grab().add_hook(new_hook)
 
 
 async def signoff_callback(slack: SlackClient, msg: dict, match: Match) -> None:
@@ -351,50 +351,50 @@ async def nag_callback(slack, msg, match):
     slack_util.reply(slack, msg, response, in_thread=False, to_channel=channel_util.GENERAL)
 
 
-signoff_hook = slack_util.Hook(signoff_callback,
-                               patterns=[
+signoff_hook = slack_util.ChannelHook(signoff_callback,
+                                      patterns=[
                                    r"signoff\s+(.*)",
                                    r"sign off\s+(.*)",
                                ],
-                               channel_whitelist=[channel_util.HOUSEJOBS])
+                                      channel_whitelist=[channel_util.HOUSEJOBS])
 
-undo_hook = slack_util.Hook(undo_callback,
-                            patterns=[
+undo_hook = slack_util.ChannelHook(undo_callback,
+                                   patterns=[
                                 r"unsignoff\s+(.*)",
                                 r"undosignoff\s+(.*)",
                                 r"undo signoff\s+(.*)",
                             ],
-                            channel_whitelist=[channel_util.HOUSEJOBS])
+                                   channel_whitelist=[channel_util.HOUSEJOBS])
 
-late_hook = slack_util.Hook(late_callback,
-                            patterns=[
+late_hook = slack_util.ChannelHook(late_callback,
+                                   patterns=[
                                 r"marklate\s+(.*)",
                                 r"mark late\s+(.*)",
                             ],
-                            channel_whitelist=[channel_util.HOUSEJOBS])
+                                   channel_whitelist=[channel_util.HOUSEJOBS])
 
-reset_hook = slack_util.Hook(reset_callback,
-                             patterns=[
+reset_hook = slack_util.ChannelHook(reset_callback,
+                                    patterns=[
                                  r"reset signoffs",
                                  r"reset sign offs",
                              ],
-                             channel_whitelist=[channel_util.COMMAND_CENTER_ID])
+                                    channel_whitelist=[channel_util.COMMAND_CENTER_ID])
 
-nag_hook = slack_util.Hook(nag_callback,
-                           patterns=[
+nag_hook = slack_util.ChannelHook(nag_callback,
+                                  patterns=[
                                r"nagjobs\s+(.*)",
                                r"nag jobs\s+(.*)"
                            ],
-                           channel_whitelist=[channel_util.COMMAND_CENTER_ID])
+                                  channel_whitelist=[channel_util.COMMAND_CENTER_ID])
 
-reassign_hook = slack_util.Hook(reassign_callback,
-                                patterns=r"reassign\s+(.*?)-&gt;\s+(.+)",
-                                channel_whitelist=[channel_util.HOUSEJOBS])
+reassign_hook = slack_util.ChannelHook(reassign_callback,
+                                       patterns=r"reassign\s+(.*?)-&gt;\s+(.+)",
+                                       channel_whitelist=[channel_util.HOUSEJOBS])
 
-refresh_hook = slack_util.Hook(refresh_callback,
-                               patterns=[
+refresh_hook = slack_util.ChannelHook(refresh_callback,
+                                      patterns=[
                                    "refresh points",
                                    "update points"
                                ],
-                               channel_whitelist=[channel_util.COMMAND_CENTER_ID]
-                               )
+                                      channel_whitelist=[channel_util.COMMAND_CENTER_ID]
+                                      )

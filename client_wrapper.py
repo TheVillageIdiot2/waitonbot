@@ -123,5 +123,5 @@ class ClientWrapper(object):
 _singleton = ClientWrapper()
 
 
-def get_client_wrapper() -> ClientWrapper:
+def grab() -> ClientWrapper:
     return _singleton

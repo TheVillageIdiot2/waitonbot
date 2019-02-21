@@ -105,4 +105,4 @@ async def find_by_name(name: str, threshold: Optional[float] = None) -> Brother:
         raise BrotherNotFound(msg)
 
 
-scroll_hook = slack_util.Hook(scroll_callback, patterns=r"scroll\s+(.*)")
+scroll_hook = slack_util.ChannelHook(scroll_callback, patterns=r"scroll\s+(.*)")

@@ -16,7 +16,7 @@ import slavestothemachine
 
 
 def main() -> None:
-    wrap = client_wrapper.get_client_wrapper()
+    wrap = client_wrapper.grab()
 
     # Add scroll handling
     wrap.add_hook(scroll_util.scroll_hook)
@@ -46,7 +46,7 @@ def main() -> None:
     wrap.add_hook(job_commands.refresh_hook)
 
     # Add help
-    wrap.add_hook(slack_util.Hook(help_callback, patterns=[r"help", r"bot\s+help"]))
+    wrap.add_hook(slack_util.ChannelHook(help_callback, patterns=[r"help", r"bot\s+help"]))
 
     # Add boozebot
     # wrap.add_passive(periodicals.ItsTenPM())

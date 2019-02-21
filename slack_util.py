@@ -1,4 +1,6 @@
+from __future__ import annotations
 import re
+from dataclasses import dataclass
 from time import sleep, time
 from typing import Any, Optional, Generator, Match, Callable, List, Coroutine, Union, TypeVar, Awaitable
 
@@ -10,9 +12,10 @@ Slack helpers. Separated for compartmentalization
 """
 
 
-def reply(slack: SlackClient, msg: dict, text: str, in_thread: bool = True, to_channel: str = None) -> dict:
+def reply(msg: dict, text: str, in_thread: bool = True, to_channel: str = None) -> dict:
     """
-    Sends message with "text" as its content to the channel that message came from
+    Sends message with "text" as its content to the channel that message came from.
+    Returns the JSON response.
     """
     # If no channel specified, just do same as msg
     if to_channel is None:
@@ -27,9 +30,10 @@ def reply(slack: SlackClient, msg: dict, text: str, in_thread: bool = True, to_c
         return send_message(slack, text, to_channel)
 
 
-def send_message(slack: SlackClient, text: str, channel: str, thread: str = None, broadcast: bool = False) -> dict:
+def send_message(text: str, channel: str, thread: str = None, broadcast: bool = False) -> dict:
     """
-    Copy of the internal send message function of slack
+    Copy of the internal send message function of slack, with some helpful options.
+    Returns the JSON response.
     """
     kwargs = {"channel": channel, "text": text}
     if thread:
@@ -40,7 +44,58 @@ def send_message(slack: SlackClient, text: str, channel: str, thread: str = None
     return slack.api_call("chat.postMessage", **kwargs)
 
 
-def message_stream(slack: SlackClient) -> Generator[dict, None, None]:
+"""
+Objects to represent things
+"""
+class User:
+    pass
+
+class Channel:
+    @property
+    def channel_name(self) -> str:
+        raise NotImplementedError()
+
+
+
+
+"""
+Below we have a modular system that represents possible event contents.
+"""
+@dataclass
+class Event:
+    channel: Optional[ChannelContext]
+    user: Optional[UserContext]
+    message: Optional[Message]
+
+
+# If this was posted in a specific channel or conversation
+@dataclass
+class ChannelContext:
+    channel_id: str
+
+
+# If there is a specific user associated with this event
+@dataclass
+class UserContext:
+    user_id: str
+
+    def as_user(self) -> User:
+        raise NotImplementedError()
+
+
+# Whether or not this is a threadable text message
+@dataclass
+class Message:
+    ts: str
+    text: str
+
+
+@dataclass
+class File:
+    pass
+
+
+def message_stream(slack: SlackClient) -> Generator[Event, None, None]:
     """
     Generator that yields messages from slack.
     Messages are in standard api format, look it up.
@@ -83,35 +138,41 @@ class VerboseWrapper(Callable):
         try:
             return await awt
         except Exception as e:
-            reply(self.slack, self.command_msg, "Error: {}".format(str(e)), True)
+            reply(self.command_msg, "Error: {}".format(str(e)), True)
             raise e
 
 
+# The result of a message
 MsgAction = Coroutine[Any, Any, None]
-Callback = Callable[[SlackClient, dict, Match], MsgAction]
+# The function called on a message
+Callback = Callable[[SlackClient, Message, Match], MsgAction]
 
 
 class DeadHook(Exception):
     pass
 
 
+# Abstract hook parent class
 class AbsHook(object):
     def __init__(self, consumes_applicable: bool):
         # Whether or not messages that yield a coroutine should not be checked further
         self.consumes = consumes_applicable
 
-    def try_apply(self, slack: SlackClient, msg: dict) -> Optional[Coroutine[None, None, None]]:
+    def try_apply(self, event: Event) -> Optional[MsgAction]:
         raise NotImplementedError()
 
 
-class Hook(AbsHook):
+class ChannelHook(AbsHook):
+    """
+    Hook that handles messages in a variety of channels
+    """
     def __init__(self,
                  callback: Callback,
                  patterns: Union[str, List[str]],
                  channel_whitelist: Optional[List[str]] = None,
                  channel_blacklist: Optional[List[str]] = None,
                  consumer: bool = True):
-        super(Hook, self).__init__(consumer)
+        super(ChannelHook, self).__init__(consumer)
 
         # Save all
         if not isinstance(patterns, list):
@@ -131,7 +192,7 @@ class Hook(AbsHook):
         else:
             raise ValueError("Cannot whitelist and blacklist")
 
-    def try_apply(self, slack: SlackClient, msg: dict) -> Optional[Coroutine[None, None, None]]:
+    def try_apply(self,  event: Event) -> Optional[MsgAction]:
         """
         Returns whether a message should be handled by this dict, returning a Match if so, or None
         """
@@ -170,7 +231,7 @@ class ReplyWaiter(AbsHook):
         self.start_time = time()
         self.dead = False
 
-    def try_apply(self, slack: SlackClient, msg: dict) -> Optional[Coroutine[None, None, None]]:
+    def try_apply(self,  event: Event) -> Optional[MsgAction]:
         # First check: are we dead of age yet?
         time_alive = time() - self.start_time
         should_expire = time_alive > self.lifetime
@@ -199,6 +260,6 @@ class Passive(object):
     Base class for Periodical tasks, such as reminders and stuff
     """
 
-    async def run(self, slack: SlackClient) -> None:
+    async def run(self) -> None:
         # Run this passive routed through the specified slack client.
         raise NotImplementedError()

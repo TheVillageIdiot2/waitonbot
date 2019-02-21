@@ -89,7 +89,7 @@ async def record_towel_contribution(for_brother: Brother, contribution_count: in
 
 
 # Make dem HOOKs
-count_work_hook = slack_util.Hook(count_work_callback,
-                                  patterns=".*",
-                                  channel_whitelist=[channel_util.SLAVES_TO_THE_MACHINE_ID],
-                                  consumer=False)
+count_work_hook = slack_util.ChannelHook(count_work_callback,
+                                         patterns=".*",
+                                         channel_whitelist=[channel_util.SLAVES_TO_THE_MACHINE_ID],
+                                         consumer=False)
