@@ -4,6 +4,7 @@ from typing import Optional, List
 
 import house_management
 import identifier
+import job_commands
 import slack_util
 
 
@@ -30,20 +31,63 @@ class ItsTenPM(slack_util.Passive):
             await asyncio.sleep(60)
 
 
-class RemindJobs(slack_util.Passive):
+# Shared behaviour
+class JobNotifier:
+    @staticmethod
+    def get_day_of_week() -> str:
+        """
+        Gets the current day of week as a str
+        """
+        return ["Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+                "Sunday"][datetime.now().weekday()]
+
+    @staticmethod
+    def is_job_valid(a: Optional[house_management.JobAssignment]):
+        # If it doesn't exist, it a thot
+        if a is None:
+            return False
+        # If its not today, we shouldn't nag
+        if a.job.day_of_week.lower() != JobNotifier.get_day_of_week().lower():
+            return False
+        # If it is unassigned, we can't nag
+        if a.assignee is None:
+            return False
+        # If its been signed off, no need to nag
+        if a.signer is not None:
+            return False
+        # If the brother wasn't recognized, don't try nagging
+        if not a.assignee.is_valid():
+            return False
+        return True
+
+
+class NotifyJobs(slack_util.Passive, JobNotifier):
+    async def run(self) -> None:
+        while True:
+            # Get the "Start" of the current day (Say, 10AM)
+            today_remind_time = datetime.now().replace(hour=10, minute=00, second=0)
+
+            # Sleep until that time
+            delay = seconds_until(today_remind_time)
+            await asyncio.sleep(delay)
+
+            # Now it is that time. Nag the jobs
+            job_commands.nag_jobs(self.get_day_of_week())
+
+            # Sleep for a bit to prevent double shots
+            await asyncio.sleep(10)
+
+
+class RemindJobs(slack_util.Passive, JobNotifier):
     async def run(self) -> None:
         while True:
             # Get the end of the current day (Say, 10PM)
             today_remind_time = datetime.now().replace(hour=22, minute=00, second=0)
-
-            # Get the current day of week
-            dow = ["Monday",
-                   "Tuesday",
-                   "Wednesday",
-                   "Thursday",
-                   "Friday",
-                   "Saturday",
-                   "Sunday"][datetime.now().weekday()]
 
             # Sleep until that time
             delay = seconds_until(today_remind_time)
@@ -53,28 +97,10 @@ class RemindJobs(slack_util.Passive):
             assigns = await house_management.import_assignments()
 
             # Filter to incomplete, and today
-            def valid_filter(a: Optional[house_management.JobAssignment]):
-                # If it doesn't exist, it a thot
-                if a is None:
-                    return False
-                # If its not today, we shouldn't nag
-                if a.job.day_of_week.lower() != dow.lower():
-                    return False
-                # If it is unassigned, we can't nag
-                if a.assignee is None:
-                    return False
-                # If its been signed off, no need to nag
-                if a.signer is not None:
-                    return False
-                # If the brother wasn't recognized, don't try nagging
-                if not a.assignee.is_valid():
-                    return False
-                return True
-
-            assigns: List[house_management.JobAssignment] = [a for a in assigns if valid_filter(a)]
+            assigns: List[house_management.JobAssignment] = [a for a in assigns if self.is_job_valid(a)]
 
             # Now, we want to nag each person. If we don't actually know who they are, so be it.
-            print("Nagging!")
+            print("Reminding!")
             for a in assigns:
                 # Get the relevant slack ids
                 assignee_ids = await identifier.lookup_brother_userids(a.assignee)
@@ -92,3 +118,15 @@ class RemindJobs(slack_util.Passive):
 
             # Take a break to ensure no double-shots
             await asyncio.sleep(10)
+
+
+class Updatinator(slack_util.Passive):
+    def __init__(self, wrapper_to_update: slack_util.ClientWrapper, interval_seconds: int):
+        self.wrapper_target = wrapper_to_update
+        self.interval = interval_seconds
+
+    async def run(self):
+        while True:
+            await asyncio.sleep(self.interval)
+            self.wrapper_target.update_channels()
+            self.wrapper_target.update_users()

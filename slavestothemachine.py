@@ -2,10 +2,7 @@ import re
 import textwrap
 from typing import Match
 
-from slackclient import SlackClient
-
 import house_management
-import identifier
 import slack_util
 from scroll_util import Brother
 

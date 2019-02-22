@@ -44,6 +44,9 @@ def main() -> None:
     # Add boozebot
     # wrap.add_passive(periodicals.ItsTenPM())
 
+    # Add automatic updating of users
+    wrap.add_passive(periodicals.Updatinator(wrap, 60))
+
     # Add nagloop
     wrap.add_passive(periodicals.RemindJobs())
 

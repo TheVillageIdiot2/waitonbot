@@ -27,7 +27,7 @@ Objects to represent things within a slack workspace
 class User:
     id: str
     name: str
-    real_name: str
+    real_name: Optional[str]
     email: Optional[str]
 
     async def get_brother(self) -> Optional[scroll_util.Brother]:
@@ -41,8 +41,6 @@ class User:
 class Channel:
     id: str
     name: str
-    purpose: str
-    members: List[User]
 
 
 """
@@ -109,7 +107,7 @@ def message_stream(slack: SlackClient) -> Generator[Event, None, None]:
     # Do forever
     while True:
         try:
-            if slack.rtm_connect(with_team_state=True, auto_reconnect=True):
+            if slack.rtm_connect(with_team_state=False, auto_reconnect=True):
                 print("Waiting for messages")
                 while True:
                     sleep(0.1)
@@ -171,6 +169,8 @@ class ClientWrapper(object):
         # Cache users and channels
         self.users: dict = {}
         self.channels: dict = {}
+        self.update_users()
+        self.update_channels()
 
     # Scheduled events handling
     def add_passive(self, per: Passive) -> None:
@@ -280,6 +280,83 @@ class ClientWrapper(object):
                 kwargs["reply_broadcast"] = True
 
         return self.api_call("chat.postMessage", **kwargs)
+
+    def update_channels(self):
+        """
+        Queries the slack API for all current channels
+        """
+        # Necessary because of pagination
+        cursor = None
+
+        # Make a new dict to use
+        new_dict = {}
+
+        # Iterate over results
+        while True:
+            # Set args depending on if a cursor exists
+            args = {"limit": 1000, "type": "public_channel,private_channel,mpim,im"}
+            if cursor:
+                args["cursor"] = cursor
+
+            channel_dicts = self.api_call("https://slack.com/api/conversations.list", **args)
+
+            # If the response is good, put its results to the dict
+            if channel_dicts["ok"]:
+                for channel_dict in channel_dicts["channels"]:
+                    new_channel = Channel(id=channel_dict["id"],
+                                          name=channel_dict["name"])
+                    new_dict[new_channel.id] = new_channel
+
+                # If no new channels, just give it up
+                if len(channel_dicts["channels"]) == 0:
+                    break
+
+                # Otherwise, fetch the cursor
+                cursor = channel_dicts.get("response_metadata").get("next_cursor")
+
+            else:
+                print("Warning: failed to retrieve channels")
+                break
+        self.channels = new_dict
+
+    def update_users(self):
+        """
+        Queries the slack API for all current users
+        """
+        # Necessary because of pagination
+        cursor = None
+
+        while True:
+            # Set args depending on if a cursor exists
+            args = {"limit": 1000}
+            if cursor:
+                args["cursor"] = cursor
+
+            user_dicts = self.api_call("https://slack.com/api/users.list", **args)
+
+            # Make a new dict to use
+            new_dict = {}
+
+            # If the response is good:
+            if user_dicts["ok"]:
+                for user_dict in user_dicts["members"]:
+                    new_user = User(id=user_dict.get("id"),
+                                    name=user_dict.get("name"),
+                                    real_name=user_dict.get("real_name"),
+                                    email=user_dict.get("profile").get("email"))
+                    new_dict[new_user.id] = new_user
+
+                # If no new channels, just give it up
+                if len(user_dicts["channels"]) == 0:
+                    break
+
+                # Otherwise, fetch the cursor
+                cursor = user_dicts.get("response_metadata").get("next_cursor")
+
+            else:
+                print("Warning: failed to retrieve channels")
+                break
+        self.users = new_dict
 
 
 # Create a single instance of the client wrapper

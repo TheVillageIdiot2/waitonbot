@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import List, Match, Callable, TypeVar, Optional, Iterable
 
 from fuzzywuzzy import fuzz
-from slackclient import SlackClient
 
 import house_management
 import identifier
@@ -124,8 +123,8 @@ async def _mod_jobs(event: slack_util.Event,
         # Say we need more info
         job_list = "\n".join("{}: {}".format(i, a.job.pretty_fmt()) for i, a in enumerate(closest_assigns))
         slack_util.get_slack().reply(event, "Multiple relevant job listings found.\n"
-                              "Please enter the number corresponding to the job "
-                              "you wish to modify:\n{}".format(job_list))
+                                            "Please enter the number corresponding to the job "
+                                            "you wish to modify:\n{}".format(job_list))
 
         # Establish a follow up command pattern
         pattern = r"\d+"
@@ -170,7 +169,7 @@ async def signoff_callback(event: slack_util.Event, match: Match) -> None:
 
         # Say we did it wooo!
         slack_util.get_slack().reply(event, "Signed off {} for {}".format(context.assign.assignee.name,
-                                                              context.assign.job.name))
+                                                                          context.assign.job.name))
         alert_user(context.assign.assignee, "{} signed you off for {}.".format(context.assign.signer.name,
                                                                                context.assign.job.pretty_fmt()))
 
@@ -198,7 +197,7 @@ async def undo_callback(event: slack_util.Event, match: Match) -> None:
 
         # Say we did it wooo!
         slack_util.get_slack().reply(event, "Undid signoff of {} for {}".format(context.assign.assignee.name,
-                                                                    context.assign.job.name))
+                                                                                context.assign.job.name))
         alert_user(context.assign.assignee, "{} undid your signoff off for {}.\n"
                                             "Must have been a mistake".format(context.assign.signer.name,
                                                                               context.assign.job.pretty_fmt()))
@@ -227,8 +226,8 @@ async def late_callback(event: slack_util.Event, match: Match) -> None:
 
         # Say we did it
         slack_util.get_slack().reply(event, "Toggled lateness of {}.\n"
-                                     "Now marked as late: {}".format(context.assign.job.pretty_fmt(),
-                                                                     context.assign.late))
+                                            "Now marked as late: {}".format(context.assign.job.pretty_fmt(),
+                                                                            context.assign.late))
 
     # Fire it off
     await _mod_jobs(event, scorer, modifier)
@@ -311,22 +310,27 @@ async def refresh_callback(event: slack_util.Event, match: Match) -> None:
 async def nag_callback(event: slack_util.Event, match: Match) -> None:
     # Get the day
     day = match.group(1).lower().strip()
+    if not await nag_jobs(day):
+        slack_util.get_slack().reply(event,
+                                     "No jobs found. Check that the day is spelled correctly, with no extra symbols.\n"
+                                     "It is possible that all jobs have been signed off, as well.",
+                                     in_thread=True)
 
+
+# Wrapper so we can auto-call this as well
+async def nag_jobs(day_of_week: str) -> bool:
     # Get the assigns
     assigns = await house_management.import_assignments()
 
     # Filter to day
-    assigns = [assign for assign in assigns if assign is not None and assign.job.day_of_week.lower() == day]
+    assigns = [assign for assign in assigns if assign is not None and assign.job.day_of_week.lower() == day_of_week]
 
     # Filter signed off
     assigns = [assign for assign in assigns if assign.signer is None]
 
-    # If no jobs found, somethings up. Probably mispelled day.
+    # If no jobs found, somethings up. Probably mispelled day. Return failure
     if not assigns:
-        slack_util.get_slack().reply(event, "No jobs found. Check that the day is spelled correctly, with no extra symbols.\n"
-                                     "It is possible that all jobs have been signed off, as well.",
-                         in_thread=True)
-        return
+        return False
 
     # Nag each
     response = "Do yer jerbs! They are as follows:\n"
@@ -347,7 +351,7 @@ async def nag_callback(event: slack_util.Event, match: Match) -> None:
         response += "\n"
 
     general_id = slack_util.get_slack().get_channel_by_name("#general").id
-    slack_util.get_slack().reply(event, response, in_thread=False, to_channel=general_id)
+    slack_util.get_slack().send_message(response, general_id)
 
 
 signoff_hook = slack_util.ChannelHook(signoff_callback,
