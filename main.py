@@ -48,6 +48,7 @@ def main() -> None:
     wrap.add_passive(periodicals.Updatinator(wrap, 60))
 
     # Add nagloop
+    wrap.add_passive(periodicals.NotifyJobs())
     wrap.add_passive(periodicals.RemindJobs())
 
     event_loop = asyncio.get_event_loop()
