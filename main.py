@@ -66,7 +66,8 @@ async def help_callback(event: slack_util.Event, match: Match) -> None:
     "my scroll is number" : Registers your slack account to have a certain scroll, for the purpose of automatic dm's.
     "@person has scroll number" : same as above, but for other users. Helpful if they are being obstinate.
     "what is my scroll" : Echos back what the bot thinks your scroll is. Largely for debugging.
-    "what is my name" : Echos back what the bot thinks your name is. Largely for debugging. If you want to change this, you'll need to fix the "Sorted family tree" file that the bot reads. Sorry.
+    "what is my name" : Echos back what the bot thinks your name is. Largely for debugging. If you want to change this, 
+    you'll need to fix the "Sorted family tree" file that the bot reads. Sorry.
     "channel id #wherever" : Debug command to get a slack channels full ID
     "reboot" : Restarts the server.
     "signoff John Doe" : Sign off a brother's house job. Will prompt for more information if needed.
@@ -80,7 +81,8 @@ async def help_callback(event: slack_util.Event, match: Match) -> None:
     
     ---
     
-    Also of note is that in #slavestothemachine, any wording of the format "replaced <number>", or similarly with "washed", "dried", "rolled", or "flaked", will track your effort for the week.
+    Also of note is that in #slavestothemachine, any wording of the format "replaced <number>", or similarly with 
+    "washed", "dried", "rolled", or "flaked", will track your effort for the week.
     
     Github is https://github.com/TheVillageIdiot2/waitonbot
     Man in charge is Jacob Henry, but nothing lasts forever.
