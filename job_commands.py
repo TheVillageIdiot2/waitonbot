@@ -352,6 +352,7 @@ async def nag_jobs(day_of_week: str) -> bool:
 
     general_id = slack_util.get_slack().get_channel_by_name("#general").id
     slack_util.get_slack().send_message(response, general_id)
+    return True
 
 
 signoff_hook = slack_util.ChannelHook(signoff_callback,
