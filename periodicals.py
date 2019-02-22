@@ -2,9 +2,6 @@ import asyncio
 from datetime import datetime
 from typing import Optional, List
 
-from slackclient import SlackClient
-
-import channel_util
 import house_management
 import identifier
 import slack_util
@@ -17,7 +14,7 @@ def seconds_until(target: datetime) -> float:
 
 
 class ItsTenPM(slack_util.Passive):
-    async def run(self, slack: SlackClient) -> None:
+    async def run(self) -> None:
         while True:
             # Get 10PM
             ten_pm = datetime.now().replace(hour=22, minute=0, second=0)
@@ -27,14 +24,14 @@ class ItsTenPM(slack_util.Passive):
             await asyncio.sleep(delay)
 
             # Crow like a rooster
-            slack_util.send_message(slack, "IT'S 10 PM!", channel_util.RANDOM)
+            slack_util.get_slack().send_message("IT'S 10 PM!", slack_util.get_slack().get_channel_by_name("#random").id)
 
             # Wait a while before trying it again, to prevent duplicates
             await asyncio.sleep(60)
 
 
 class RemindJobs(slack_util.Passive):
-    async def run(self, slack: SlackClient) -> None:
+    async def run(self) -> None:
         while True:
             # Get the end of the current day (Say, 10PM)
             today_remind_time = datetime.now().replace(hour=22, minute=00, second=0)
@@ -80,14 +77,14 @@ class RemindJobs(slack_util.Passive):
             print("Nagging!")
             for a in assigns:
                 # Get the relevant slack ids
-                assignee_ids = identifier.lookup_brother_userids(a.assignee)
+                assignee_ids = await identifier.lookup_brother_userids(a.assignee)
 
                 # For each, send them a DM
                 success = False
                 for slack_id in assignee_ids:
                     msg = "{}, you still need to do {}".format(a.assignee.name, a.job.pretty_fmt())
                     success = True
-                    slack_util.send_message(slack, msg, slack_id)
+                    slack_util.get_slack().send_message(msg, slack_id)
 
                 # Warn on failure
                 if not success:

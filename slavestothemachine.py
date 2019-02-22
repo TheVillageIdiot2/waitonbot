@@ -4,7 +4,6 @@ from typing import Match
 
 from slackclient import SlackClient
 
-import channel_util
 import house_management
 import identifier
 import slack_util
@@ -19,16 +18,16 @@ def fmt_work_dict(work_dict: dict) -> str:
 
 
 # noinspection PyUnusedLocal
-async def count_work_callback(slack: SlackClient, msg: dict, match: Match) -> None:
+async def count_work_callback(event: slack_util.Event, match: Match) -> None:
     # Make an error wrapper
-    verb = slack_util.VerboseWrapper(slack, msg)
+    verb = slack_util.VerboseWrapper(event)
 
     # Tidy the text
-    text = msg["text"].lower().strip()
+    text = event.message.text.strip()
 
     # Couple things to work through.
     # One: Who sent the message?
-    who_wrote = await verb(identifier.lookup_msg_brother(msg))
+    who_wrote = await verb(event.user.as_user().get_brother())
     who_wrote_label = "{} [{}]".format(who_wrote.name, who_wrote.scroll)
 
     # Two: What work did they do?
@@ -42,9 +41,9 @@ async def count_work_callback(slack: SlackClient, msg: dict, match: Match) -> No
     # Three: check if we found anything
     if len(new_work) == 0:
         if re.search(r'\s\d\s', text) is not None:
-            slack_util.reply(slack, msg,
-                             "If you were trying to record work, it was not recognized.\n"
-                             "Use words {} or work will not be recorded".format(counted_data))
+            slack_util.get_slack().reply(event,
+                                         "If you were trying to record work, it was not recognized.\n"
+                                         "Use words {} or work will not be recorded".format(counted_data))
         return
 
     # Four: Knowing they did something, record to total work
@@ -59,7 +58,7 @@ async def count_work_callback(slack: SlackClient, msg: dict, match: Match) -> No
                                                 fmt_work_dict(new_work),
                                                 contribution_count,
                                                 new_total))
-    slack_util.reply(slack, msg, congrats)
+    slack_util.get_slack().reply(event, congrats)
 
 
 async def record_towel_contribution(for_brother: Brother, contribution_count: int) -> int:
@@ -91,5 +90,5 @@ async def record_towel_contribution(for_brother: Brother, contribution_count: in
 # Make dem HOOKs
 count_work_hook = slack_util.ChannelHook(count_work_callback,
                                          patterns=".*",
-                                         channel_whitelist=[channel_util.SLAVES_TO_THE_MACHINE_ID],
+                                         channel_whitelist=["#slavestothemachine"],
                                          consumer=False)

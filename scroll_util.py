@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from typing import List, Optional, Match
 
 from fuzzywuzzy import process
-from slackclient import SlackClient
 
 import slack_util
 
@@ -38,7 +37,7 @@ brothers_matches = [m for m in brothers_matches if m]
 brothers: List[Brother] = [Brother(m.group(2), int(m.group(1))) for m in brothers_matches]
 
 
-async def scroll_callback(slack: SlackClient, msg: dict, match: Match) -> None:
+async def scroll_callback(event: slack_util.Event, match: Match) -> None:
     """
     Finds the scroll of a brother, or the brother of a scroll, based on msg text.
     """
@@ -57,7 +56,7 @@ async def scroll_callback(slack: SlackClient, msg: dict, match: Match) -> None:
         result = "Couldn't find brother {}".format(query)
 
     # Respond
-    slack_util.reply(slack, msg, result)
+    slack_util.get_slack().reply(event, result)
 
 
 def find_by_scroll(scroll: int) -> Optional[Brother]:

@@ -2,10 +2,6 @@ import asyncio
 import textwrap
 from typing import Match
 
-from slackclient import SlackClient
-
-import channel_util
-import client_wrapper
 import identifier
 import job_commands
 import management_commands
@@ -16,7 +12,7 @@ import slavestothemachine
 
 
 def main() -> None:
-    wrap = client_wrapper.grab()
+    wrap = slack_util.get_slack()
 
     # Add scroll handling
     wrap.add_hook(scroll_util.scroll_hook)
@@ -26,9 +22,6 @@ def main() -> None:
     wrap.add_hook(identifier.identify_hook)
     wrap.add_hook(identifier.identify_other_hook)
     wrap.add_hook(identifier.name_hook)
-
-    # Added channel utility
-    wrap.add_hook(channel_util.channel_check_hook)
 
     # Add kill switch
     wrap.add_hook(management_commands.reboot_hook)
@@ -55,7 +48,7 @@ def main() -> None:
     wrap.add_passive(periodicals.RemindJobs())
 
     event_loop = asyncio.get_event_loop()
-    event_loop.set_debug(client_wrapper.DEBUG_MODE)
+    event_loop.set_debug(slack_util.DEBUG_MODE)
     message_handling = wrap.respond_messages()
     passive_handling = wrap.run_passives()
     both = asyncio.gather(message_handling, passive_handling)
@@ -63,8 +56,8 @@ def main() -> None:
 
 
 # noinspection PyUnusedLocal
-async def help_callback(slack: SlackClient, msg: dict, match: Match) -> None:
-    slack_util.reply(slack, msg, textwrap.dedent("""
+async def help_callback(event: slack_util.Event, match: Match) -> None:
+    slack_util.get_slack().reply(event, textwrap.dedent("""
     Commands are as follows. Note that some only work in certain channels.
     "my scroll is number" : Registers your slack account to have a certain scroll, for the purpose of automatic dm's.
     "@person has scroll number" : same as above, but for other users. Helpful if they are being obstinate.
