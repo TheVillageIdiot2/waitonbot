@@ -121,12 +121,16 @@ class RemindJobs(slack_util.Passive, JobNotifier):
 
 
 class Updatinator(slack_util.Passive):
+    """
+    Periodically updates the channels and users in the slack
+    """
     def __init__(self, wrapper_to_update: slack_util.ClientWrapper, interval_seconds: int):
         self.wrapper_target = wrapper_to_update
         self.interval = interval_seconds
 
     async def run(self):
+        # Give time to warmup
         while True:
-            await asyncio.sleep(self.interval)
             self.wrapper_target.update_channels()
             self.wrapper_target.update_users()
+            await asyncio.sleep(self.interval)

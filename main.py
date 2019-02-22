@@ -45,7 +45,7 @@ def main() -> None:
     # wrap.add_passive(periodicals.ItsTenPM())
 
     # Add automatic updating of users
-    wrap.add_passive(periodicals.Updatinator(wrap, 60))
+    wrap.add_passive(periodicals.Updatinator(wrap, 120))
 
     # Add nagloop
     wrap.add_passive(periodicals.NotifyJobs())

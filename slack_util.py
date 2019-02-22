@@ -169,8 +169,6 @@ class ClientWrapper(object):
         # Cache users and channels
         self.users: dict = {}
         self.channels: dict = {}
-        self.update_users()
-        self.update_channels()
 
     # Scheduled events handling
     def add_passive(self, per: Passive) -> None:
@@ -298,7 +296,7 @@ class ClientWrapper(object):
             if cursor:
                 args["cursor"] = cursor
 
-            channel_dicts = self.api_call("https://slack.com/api/conversations.list", **args)
+            channel_dicts = self.api_call("conversations.list", **args)
 
             # If the response is good, put its results to the dict
             if channel_dicts["ok"]:
@@ -307,15 +305,16 @@ class ClientWrapper(object):
                                           name=channel_dict["name"])
                     new_dict[new_channel.id] = new_channel
 
-                # If no new channels, just give it up
-                if len(channel_dicts["channels"]) == 0:
-                    break
-
-                # Otherwise, fetch the cursor
+                # Fetch the cursor
                 cursor = channel_dicts.get("response_metadata").get("next_cursor")
 
+                # If cursor is blank, we're done new channels, just give it up
+                if cursor == "":
+                    break
+
+
             else:
-                print("Warning: failed to retrieve channels")
+                print("Warning: failed to retrieve channels. Message: {}".format(channel_dicts))
                 break
         self.channels = new_dict
 
@@ -332,7 +331,7 @@ class ClientWrapper(object):
             if cursor:
                 args["cursor"] = cursor
 
-            user_dicts = self.api_call("https://slack.com/api/users.list", **args)
+            user_dicts = self.api_call("users.list", **args)
 
             # Make a new dict to use
             new_dict = {}
@@ -346,15 +345,15 @@ class ClientWrapper(object):
                                     email=user_dict.get("profile").get("email"))
                     new_dict[new_user.id] = new_user
 
-                # If no new channels, just give it up
-                if len(user_dicts["channels"]) == 0:
-                    break
-
-                # Otherwise, fetch the cursor
+                # Fetch the cursor
                 cursor = user_dicts.get("response_metadata").get("next_cursor")
 
+                # If cursor is blank, we're done new channels, just give it up
+                if cursor == "":
+                    break
+
             else:
-                print("Warning: failed to retrieve channels")
+                print("Warning: failed to retrieve users")
                 break
         self.users = new_dict
 
