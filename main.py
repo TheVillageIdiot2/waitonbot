@@ -53,9 +53,9 @@ def main() -> None:
 
     event_loop = asyncio.get_event_loop()
     event_loop.set_debug(slack_util.DEBUG_MODE)
-    message_handling = wrap.respond_messages()
+    event_handling = wrap.handle_events()
     passive_handling = wrap.run_passives()
-    both = asyncio.gather(message_handling, passive_handling)
+    both = asyncio.gather(event_handling, passive_handling)
     event_loop.run_until_complete(both)
 
 

@@ -350,7 +350,7 @@ async def nag_jobs(day_of_week: str) -> bool:
             response += "(scroll missing. Please register for @ pings!)"
         response += "\n"
 
-    general_id = slack_util.get_slack().get_channel_by_name("#general").id
+    general_id = slack_util.get_slack().get_conversation_by_name("#general").id
     slack_util.get_slack().send_message(response, general_id)
     return True
 
