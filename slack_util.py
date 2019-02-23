@@ -276,7 +276,7 @@ class ClientWrapper(object):
 
                     # If we get a coro back, then task it up and set consumption appropriately
                     if coro is not None:
-                        print("Spawned task")
+                        print("Spawned task. Now {} running total.".format(len(asyncio.all_tasks())))
                         yield asyncio.create_task(_exception_printing_task(coro))
                         if hook.consumes:
                             break
@@ -284,7 +284,6 @@ class ClientWrapper(object):
                 except DeadHook:
                     # If a hook wants to die, let it.
                     self.hooks.remove(hook)
-            print("Done spawning tasks. Now {} running total.".format(len(asyncio.all_tasks())))
 
     # Data getting/sending
 
