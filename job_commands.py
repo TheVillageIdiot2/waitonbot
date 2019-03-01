@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Match, Callable, TypeVar, Optional, Iterable
+from typing import List, Match, Callable, TypeVar, Optional, Iterable, Any, Coroutine
 
 from fuzzywuzzy import fuzz
 
@@ -60,7 +60,7 @@ class _ModJobContext:
 
 async def _mod_jobs(event: slack_util.Event,
                     relevance_scorer: Callable[[house_management.JobAssignment], Optional[float]],
-                    modifier: Callable[[_ModJobContext], None],
+                    modifier: Callable[[_ModJobContext], Coroutine[Any, Any, None]],
                     no_job_msg: str = None
                     ) -> None:
     """
@@ -98,7 +98,7 @@ async def _mod_jobs(event: slack_util.Event,
         context = _ModJobContext(signer, fresh_targ_assign)
 
         # Modify it
-        modifier(context)
+        await modifier(context)
 
         # Re-upload
         await house_management.export_assignments(fresh_assigns)
@@ -164,14 +164,14 @@ async def signoff_callback(event: slack_util.Event, match: Match) -> None:
                 return r
 
     # Set the assigner, and notify
-    def modifier(context: _ModJobContext):
+    async def modifier(context: _ModJobContext):
         context.assign.signer = context.signer
 
         # Say we did it wooo!
         slack_util.get_slack().reply(event, "Signed off {} for {}".format(context.assign.assignee.name,
                                                                           context.assign.job.name))
-        alert_user(context.assign.assignee, "{} signed you off for {}.".format(context.assign.signer.name,
-                                                                               context.assign.job.pretty_fmt()))
+        await alert_user(context.assign.assignee, "{} signed you off for {}.".format(context.assign.signer.name,
+                                                                                     context.assign.job.pretty_fmt()))
 
     # Fire it off
     await _mod_jobs(event, scorer, modifier)
@@ -192,15 +192,15 @@ async def undo_callback(event: slack_util.Event, match: Match) -> None:
                 return r
 
     # Set the assigner to be None, and notify
-    def modifier(context: _ModJobContext):
+    async def modifier(context: _ModJobContext):
         context.assign.signer = None
 
         # Say we did it wooo!
         slack_util.get_slack().reply(event, "Undid signoff of {} for {}".format(context.assign.assignee.name,
                                                                                 context.assign.job.name))
-        alert_user(context.assign.assignee, "{} undid your signoff off for {}.\n"
-                                            "Must have been a mistake".format(context.assign.signer.name,
-                                                                              context.assign.job.pretty_fmt()))
+        await alert_user(context.assign.assignee, "{} undid your signoff off for {}.\n"
+                                                  "Must have been a mistake".format(context.assign.signer.name,
+                                                                                    context.assign.job.pretty_fmt()))
 
     # Fire it off
     await _mod_jobs(event, scorer, modifier)
@@ -221,7 +221,7 @@ async def late_callback(event: slack_util.Event, match: Match) -> None:
                 return r
 
     # Just set the assigner
-    def modifier(context: _ModJobContext):
+    async def modifier(context: _ModJobContext):
         context.assign.late = not context.assign.late
 
         # Say we did it
@@ -253,7 +253,7 @@ async def reassign_callback(event: slack_util.Event, match: Match) -> None:
                 return r
 
     # Change the assignee
-    def modifier(context: _ModJobContext):
+    async def modifier(context: _ModJobContext):
         context.assign.assignee = to_bro
 
         # Say we did it
@@ -266,8 +266,8 @@ async def reassign_callback(event: slack_util.Event, match: Match) -> None:
         reassign_msg = "Job {} reassigned from {} to {}".format(context.assign.job.pretty_fmt(),
                                                                 from_bro,
                                                                 to_bro)
-        alert_user(from_bro, reassign_msg)
-        alert_user(to_bro, reassign_msg)
+        await alert_user(from_bro, reassign_msg)
+        await alert_user(to_bro, reassign_msg)
 
     # Fire it off
     await _mod_jobs(event, scorer, modifier)
@@ -360,7 +360,7 @@ signoff_hook = slack_util.ChannelHook(signoff_callback,
                                           r"signoff\s+(.*)",
                                           r"sign off\s+(.*)",
                                       ],
-                                      channel_whitelist=["#housejobs"])
+                                      channel_whitelist=["#botzone"])
 
 undo_hook = slack_util.ChannelHook(undo_callback,
                                    patterns=[

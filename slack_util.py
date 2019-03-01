@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+from aiohttp import web
 import asyncio
 import re
 import sys
@@ -129,25 +129,7 @@ def message_stream(slack: SlackClient) -> Generator[Event, None, None]:
                     # Handle each
                     for update in update_list:
                         print("Message received: {}".format(update))
-                        event = Event()
-
-                        # Big logic folks
-                        if update["type"] == "message":
-                            # For now we only handle these basic types of messages involving text
-                            # TODO: Handle "unwrappeable" messages
-                            if "text" in update and "ts" in update:
-                                event.message = MessageContext(update["ts"], update["text"])
-                            if "channel" in update:
-                                event.conversation = ConversationContext(update["channel"])
-                            if "user" in update:
-                                event.user = UserContext(update["user"])
-                            if "thread_ts" in update:
-                                event.thread = ThreadContext(update["thread_ts"])
-
-                        # TODO: Handle more types
-                        # We need to
-
-                        yield event
+                        yield dict_to_event(update)
 
         except (SlackNotConnected, OSError) as e:
             print("Error while reading messages:")
@@ -158,6 +140,30 @@ def message_stream(slack: SlackClient) -> Generator[Event, None, None]:
 
         sleep(5)
         print("Connection failed - retrying")
+
+
+def dict_to_event(update: dict) -> Event:
+    """
+    Converts a dict update to an actual event.
+    """
+    event = Event()
+
+    # Big logic folks
+    if update["type"] == "message":
+        # For now we only handle these basic types of messages involving text
+        # TODO: Handle "unwrappeable" messages
+        if "text" in update and "ts" in update:
+            event.message = MessageContext(update["ts"], update["text"])
+        if "channel" in update:
+            event.conversation = ConversationContext(update["channel"])
+        if "user" in update:
+            event.user = UserContext(update["user"])
+        if "thread_ts" in update:
+            event.thread = ThreadContext(update["thread_ts"])
+
+    # TODO: Handle more types of events, including http data etc.
+
+    return event
 
 
 """
@@ -254,8 +260,19 @@ class ClientWrapper(object):
             yield await asyncio.get_running_loop().run_in_executor(None, get_one)
 
     async def http_event_feed(self) -> AsyncGenerator[Event, None]:
+        # Create a callback to convert requests to events
+        async def interr(request: web.Request):
+            return web.Response()
+
         # Create the server
-        pass
+        app = web.Application()
+        app.add_routes([web.get('/bothttpcallback/', interr)])
+
+        # Asynchronously serve that boy up
+        runner = web.AppRunner(app)
+        await runner.setup()
+        site = web.TCPSite(runner, 'localhost', 8080)
+        await site.start()
 
         while True:
             await asyncio.sleep(30)
@@ -293,14 +310,14 @@ class ClientWrapper(object):
     def get_conversation_by_name(self, conversation_identifier: str) -> Optional[Conversation]:
         # If looking for a direct message, first lookup user, then fetch
         if conversation_identifier[0] == "@":
-            user_name = conversation_identifier[1:]
+            user_name = conversation_identifier
 
             # Find the user by their name
             raise NotImplementedError("There wasn't a clear use case for this yet, so we've opted to just not use it")
 
         # If looking for a channel, just lookup normally
         elif conversation_identifier[0] == "#":
-            channel_name = conversation_identifier[1:]
+            channel_name = conversation_identifier
 
             # Find the channel in the dict
             for channel in self.conversations.values():
@@ -383,10 +400,10 @@ class ClientWrapper(object):
                 for channel_dict in channel_dicts["channels"]:
                     if channel_dict["is_im"]:
                         new_channel = DirectMessage(id=channel_dict["id"],
-                                                    user_id=channel_dict["user"])
+                                                    user_id="@" + channel_dict["user"])
                     else:
                         new_channel = Channel(id=channel_dict["id"],
-                                              name=channel_dict["name"])
+                                              name="#" + channel_dict["name"])
                     new_dict[new_channel.id] = new_channel
 
                 # Fetch the cursor
@@ -512,8 +529,6 @@ class ChannelHook(AbsHook):
         # Ensure that this is an event in a specific channel, with a text component
         if not (event.conversation and event.message and isinstance(event.conversation.get_conversation(), Channel)):
             return None
-
-
 
         # Fail if pattern invalid
         match = None
