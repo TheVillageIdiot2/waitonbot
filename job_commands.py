@@ -401,3 +401,23 @@ refresh_hook = slack_util.ChannelHook(refresh_callback,
                                           "update points"
                                       ],
                                       channel_whitelist=["#command-center"])
+
+block_action = """
+[
+	{
+		"type": "actions",
+        "block_id": "test_block_id",
+		"elements": [
+			{
+				"type": "button",
+                "action_id": "test_action_id",
+				"text": {
+					"type": "plain_text",
+					"text": "Send payload",
+					"emoji": false
+				}
+			}
+		]
+	}
+]
+"""
