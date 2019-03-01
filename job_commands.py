@@ -360,7 +360,7 @@ signoff_hook = slack_util.ChannelHook(signoff_callback,
                                           r"signoff\s+(.*)",
                                           r"sign off\s+(.*)",
                                       ],
-                                      channel_whitelist=["#botzone"])
+                                      channel_whitelist=["#housejobs"])
 
 undo_hook = slack_util.ChannelHook(undo_callback,
                                    patterns=[
