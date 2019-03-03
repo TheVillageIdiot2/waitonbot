@@ -2,9 +2,11 @@ import re
 import textwrap
 from typing import Match
 
-import house_management
+import hooks
+from plugins import house_management
+import client
 import slack_util
-from scroll_util import Brother
+from plugins.scroll_util import Brother
 
 counted_data = ["flaked", "rolled", "replaced", "washed", "dried"]
 lookup_format = "{}\s+(\d+)"
@@ -42,7 +44,7 @@ async def count_work_callback(event: slack_util.Event, match: Match) -> None:
     # Three: check if we found anything
     if len(new_work) == 0:
         if re.search(r'\s\d\s', text) is not None:
-            slack_util.get_slack().reply(event,
+            client.get_slack().reply(event,
                                          "If you were trying to record work, it was not recognized.\n"
                                          "Use words {} or work will not be recorded".format(counted_data))
         return
@@ -59,7 +61,7 @@ async def count_work_callback(event: slack_util.Event, match: Match) -> None:
                                                 fmt_work_dict(new_work),
                                                 contribution_count,
                                                 new_total))
-    slack_util.get_slack().reply(event, congrats)
+    client.get_slack().reply(event, congrats)
 
 
 async def record_towel_contribution(for_brother: Brother, contribution_count: int) -> int:
@@ -89,7 +91,7 @@ async def record_towel_contribution(for_brother: Brother, contribution_count: in
 
 
 # Make dem HOOKs
-count_work_hook = slack_util.ChannelHook(count_work_callback,
-                                         patterns=".*",
-                                         channel_whitelist=["#slavestothemachine"],
-                                         consumer=False)
+count_work_hook = hooks.ChannelHook(count_work_callback,
+                                    patterns=".*",
+                                    channel_whitelist=["#slavestothemachine"],
+                                    consumer=False)

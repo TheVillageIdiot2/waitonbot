@@ -2,10 +2,9 @@ import asyncio
 from datetime import datetime
 from typing import Optional, List
 
-import house_management
-import identifier
-import job_commands
-import slack_util
+import hooks
+from plugins import identifier, job_commands, house_management
+import client
 
 
 def seconds_until(target: datetime) -> float:
@@ -14,7 +13,7 @@ def seconds_until(target: datetime) -> float:
     return delta.seconds
 
 
-class ItsTenPM(slack_util.Passive):
+class ItsTenPM(hooks.Passive):
     async def run(self) -> None:
         while True:
             # Get 10PM
@@ -25,7 +24,9 @@ class ItsTenPM(slack_util.Passive):
             await asyncio.sleep(delay)
 
             # Crow like a rooster
-            slack_util.get_slack().send_message("IT'S 10 PM!", slack_util.get_slack().get_conversation_by_name("#random").id)
+            client.get_slack().send_message("IT'S 10 PM!", client
+                                            .get_slack()
+                                            .get_conversation_by_name("#random").id)
 
             # Wait a while before trying it again, to prevent duplicates
             await asyncio.sleep(60)
@@ -66,7 +67,7 @@ class JobNotifier:
         return True
 
 
-class NotifyJobs(slack_util.Passive, JobNotifier):
+class NotifyJobs(hooks.Passive, JobNotifier):
     async def run(self) -> None:
         while True:
             # Get the "Start" of the current day (Say, 10AM)
@@ -83,7 +84,7 @@ class NotifyJobs(slack_util.Passive, JobNotifier):
             await asyncio.sleep(10)
 
 
-class RemindJobs(slack_util.Passive, JobNotifier):
+class RemindJobs(hooks.Passive, JobNotifier):
     async def run(self) -> None:
         while True:
             # Get the end of the current day (Say, 10PM)
@@ -110,7 +111,7 @@ class RemindJobs(slack_util.Passive, JobNotifier):
                 for slack_id in assignee_ids:
                     msg = "{}, you still need to do {}".format(a.assignee.name, a.job.pretty_fmt())
                     success = True
-                    slack_util.get_slack().send_message(msg, slack_id)
+                    client.get_slack().send_message(msg, slack_id)
 
                 # Warn on failure
                 if not success:
@@ -120,11 +121,11 @@ class RemindJobs(slack_util.Passive, JobNotifier):
             await asyncio.sleep(10)
 
 
-class Updatinator(slack_util.Passive):
+class Updatinator(hooks.Passive):
     """
     Periodically updates the channels and users in the slack
     """
-    def __init__(self, wrapper_to_update: slack_util.ClientWrapper, interval_seconds: int):
+    def __init__(self, wrapper_to_update: client.ClientWrapper, interval_seconds: int):
         self.wrapper_target = wrapper_to_update
         self.interval = interval_seconds
 

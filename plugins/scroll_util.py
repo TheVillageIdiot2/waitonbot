@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 This file contains util for scroll polling
 Only really kept separate for neatness sake.
@@ -9,6 +11,8 @@ from typing import List, Optional, Match
 
 from fuzzywuzzy import process
 
+import hooks
+import client
 import slack_util
 
 # Use this if we can't figure out who a brother actually is
@@ -56,7 +60,7 @@ async def scroll_callback(event: slack_util.Event, match: Match) -> None:
         result = "Couldn't find brother {}".format(query)
 
     # Respond
-    slack_util.get_slack().reply(event, result)
+    client.get_slack().reply(event, result)
 
 
 def find_by_scroll(scroll: int) -> Optional[Brother]:
@@ -104,4 +108,4 @@ async def find_by_name(name: str, threshold: Optional[float] = None) -> Brother:
         raise BrotherNotFound(msg)
 
 
-scroll_hook = slack_util.ChannelHook(scroll_callback, patterns=r"scroll\s+(.*)")
+scroll_hook = hooks.ChannelHook(scroll_callback, patterns=r"scroll\s+(.*)")

@@ -5,7 +5,9 @@ import asyncio
 import shelve
 from typing import List, Match
 
-import scroll_util
+import hooks
+from plugins import scroll_util
+import client
 import slack_util
 
 # The following db maps SLACK_USER_ID -> SCROLL_INTEGER
@@ -36,7 +38,7 @@ async def identify_callback(event: slack_util.Event, match: Match):
                 result = "Bad scroll: {}".format(query)
 
             # Respond
-            slack_util.get_slack().reply(event, result)
+            client.get_slack().reply(event, result)
 
 
 async def identify_other_callback(event: slack_util.Event, match: Match):
@@ -60,7 +62,7 @@ async def identify_other_callback(event: slack_util.Event, match: Match):
                 result = "Bad scroll: {}".format(scroll_txt)
 
             # Respond
-            slack_util.get_slack().reply(event, result)
+            client.get_slack().reply(event, result)
 
 
 # noinspection PyUnusedLocal
@@ -76,7 +78,7 @@ async def check_callback(event: slack_util.Event, match: Match):
                 result = "You are currently registered with scroll {}".format(scroll)
             except KeyError:
                 result = NON_REG_MSG
-            slack_util.get_slack().reply(event, result)
+            client.get_slack().reply(event, result)
 
 
 # noinspection PyUnusedLocal
@@ -97,7 +99,7 @@ async def name_callback(event: slack_util.Event, match: Match):
                 result = NON_REG_MSG
 
             # Respond
-            slack_util.get_slack().reply(event, result)
+            client.get_slack().reply(event, result)
 
 
 async def lookup_slackid_brother(slack_id: str) -> scroll_util.Brother:
@@ -133,7 +135,7 @@ async def lookup_brother_userids(brother: scroll_util.Brother) -> List[str]:
             return result
 
 
-identify_hook = slack_util.ChannelHook(identify_callback, patterns=r"my scroll is (.*)")
-identify_other_hook = slack_util.ChannelHook(identify_other_callback, patterns=r"<@(.*)>\s+has scroll\s+(.*)")
-check_hook = slack_util.ChannelHook(check_callback, patterns=r"what is my scroll")
-name_hook = slack_util.ChannelHook(name_callback, patterns=r"what is my name")
+identify_hook = hooks.ChannelHook(identify_callback, patterns=r"my scroll is (.*)")
+identify_other_hook = hooks.ChannelHook(identify_other_callback, patterns=r"<@(.*)>\s+has scroll\s+(.*)")
+check_hook = hooks.ChannelHook(check_callback, patterns=r"what is my scroll")
+name_hook = hooks.ChannelHook(name_callback, patterns=r"what is my name")

@@ -2,17 +2,14 @@ import asyncio
 import textwrap
 from typing import Match
 
-import identifier
-import job_commands
-import management_commands
-import periodicals
-import scroll_util
+import hooks
+from plugins import identifier, job_commands, management_commands, periodicals, scroll_util, slavestothemachine
+import client
 import slack_util
-import slavestothemachine
 
 
 def main() -> None:
-    wrap = slack_util.get_slack()
+    wrap = client.get_slack()
 
     # Add scroll handling
     wrap.add_hook(scroll_util.scroll_hook)
@@ -39,7 +36,7 @@ def main() -> None:
     wrap.add_hook(job_commands.refresh_hook)
 
     # Add help
-    wrap.add_hook(slack_util.ChannelHook(help_callback, patterns=[r"help", r"bot\s+help"]))
+    wrap.add_hook(hooks.ChannelHook(help_callback, patterns=[r"help", r"bot\s+help"]))
 
     # Add boozebot
     # wrap.add_passive(periodicals.ItsTenPM())
@@ -80,7 +77,7 @@ def main() -> None:
 
 # noinspection PyUnusedLocal
 async def help_callback(event: slack_util.Event, match: Match) -> None:
-    slack_util.get_slack().reply(event, textwrap.dedent("""
+    client.get_slack().reply(event, textwrap.dedent("""
     Commands are as follows. Note that some only work in certain channels.
     "my scroll is number" : Registers your slack account to have a certain scroll, for the purpose of automatic dm's.
     "@person has scroll number" : same as above, but for other users. Helpful if they are being obstinate.

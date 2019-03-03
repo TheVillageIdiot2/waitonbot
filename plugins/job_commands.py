@@ -3,9 +3,9 @@ from typing import List, Match, Callable, TypeVar, Optional, Iterable, Any, Coro
 
 from fuzzywuzzy import fuzz
 
-import house_management
-import identifier
-import scroll_util
+import hooks
+from plugins import identifier, house_management, scroll_util
+import client
 import slack_util
 
 SHEET_ID = "1lPj9GjB00BuIq9GelOWh5GmiGsheLlowPnHLnWBvMOM"
@@ -20,7 +20,7 @@ async def alert_user(brother: scroll_util.Brother, saywhat: str) -> None:
     # We do this as a for loop just in case multiple people reg. to same scroll for some reason (e.g. dup accounts)
     succ = False
     for slack_id in await identifier.lookup_brother_userids(brother):
-        slack_util.get_slack().send_message(saywhat, slack_id)
+        client.get_slack().send_message(saywhat, slack_id)
         succ = True
 
     # Warn if we never find
@@ -112,7 +112,7 @@ async def _mod_jobs(event: slack_util.Event,
     if len(closest_assigns) == 0:
         if no_job_msg is None:
             no_job_msg = "Unable to find any jobs to apply this command to. Try again with better spelling or whatever."
-        slack_util.get_slack().reply(event, no_job_msg)
+        client.get_slack().reply(event, no_job_msg)
 
     # If theres only one job, sign it off
     elif len(closest_assigns) == 1:
@@ -122,9 +122,9 @@ async def _mod_jobs(event: slack_util.Event,
     else:
         # Say we need more info
         job_list = "\n".join("{}: {}".format(i, a.job.pretty_fmt()) for i, a in enumerate(closest_assigns))
-        slack_util.get_slack().reply(event, "Multiple relevant job listings found.\n"
-                                            "Please enter the number corresponding to the job "
-                                            "you wish to modify:\n{}".format(job_list))
+        client.get_slack().reply(event, "Multiple relevant job listings found.\n"
+                                              "Please enter the number corresponding to the job "
+                                              "you wish to modify:\n{}".format(job_list))
 
         # Establish a follow up command pattern
         pattern = r"\d+"
@@ -140,13 +140,13 @@ async def _mod_jobs(event: slack_util.Event,
                 await success_callback(closest_assigns[index])
             else:
                 # They gave a bad index, or we were unable to find the assignment again.
-                slack_util.get_slack().reply(_event, "Invalid job index / job unable to be found.")
+                client.get_slack().reply(_event, "Invalid job index / job unable to be found.")
 
         # Make a listener hook
-        new_hook = slack_util.ReplyWaiter(foc, pattern, event.message.ts, 120)
+        new_hook = hooks.ReplyWaiter(foc, pattern, event.message.ts, 120)
 
         # Register it
-        slack_util.get_slack().add_hook(new_hook)
+        client.get_slack().add_hook(new_hook)
 
 
 async def signoff_callback(event: slack_util.Event, match: Match) -> None:
@@ -168,8 +168,8 @@ async def signoff_callback(event: slack_util.Event, match: Match) -> None:
         context.assign.signer = context.signer
 
         # Say we did it wooo!
-        slack_util.get_slack().reply(event, "Signed off {} for {}".format(context.assign.assignee.name,
-                                                                          context.assign.job.name))
+        client.get_slack().reply(event, "Signed off {} for {}".format(context.assign.assignee.name,
+                                                                      context.assign.job.name))
         await alert_user(context.assign.assignee, "{} signed you off for {}.".format(context.assign.signer.name,
                                                                                      context.assign.job.pretty_fmt()))
 
@@ -196,8 +196,8 @@ async def undo_callback(event: slack_util.Event, match: Match) -> None:
         context.assign.signer = None
 
         # Say we did it wooo!
-        slack_util.get_slack().reply(event, "Undid signoff of {} for {}".format(context.assign.assignee.name,
-                                                                                context.assign.job.name))
+        client.get_slack().reply(event, "Undid signoff of {} for {}".format(context.assign.assignee.name,
+                                                                            context.assign.job.name))
         await alert_user(context.assign.assignee, "{} undid your signoff off for {}.\n"
                                                   "Must have been a mistake".format(context.assign.signer.name,
                                                                                     context.assign.job.pretty_fmt()))
@@ -225,9 +225,9 @@ async def late_callback(event: slack_util.Event, match: Match) -> None:
         context.assign.late = not context.assign.late
 
         # Say we did it
-        slack_util.get_slack().reply(event, "Toggled lateness of {}.\n"
-                                            "Now marked as late: {}".format(context.assign.job.pretty_fmt(),
-                                                                            context.assign.late))
+        client.get_slack().reply(event, "Toggled lateness of {}.\n"
+                                              "Now marked as late: {}".format(context.assign.job.pretty_fmt(),
+                                                                              context.assign.late))
 
     # Fire it off
     await _mod_jobs(event, scorer, modifier)
@@ -260,7 +260,7 @@ async def reassign_callback(event: slack_util.Event, match: Match) -> None:
         reassign_msg = "Job {} reassigned from {} to {}".format(context.assign.job.pretty_fmt(),
                                                                 from_bro,
                                                                 to_bro)
-        slack_util.get_slack().reply(event, reassign_msg)
+        client.get_slack().reply(event, reassign_msg)
 
         # Tell the people
         reassign_msg = "Job {} reassigned from {} to {}".format(context.assign.job.pretty_fmt(),
@@ -296,7 +296,7 @@ async def reset_callback(event: slack_util.Event, match: Match) -> None:
     house_management.apply_house_points(points, await house_management.import_assignments())
     house_management.export_points(headers, points)
 
-    slack_util.get_slack().reply(event, "Reset scores and signoffs")
+    client.get_slack().reply(event, "Reset scores and signoffs")
 
 
 # noinspection PyUnusedLocal
@@ -304,17 +304,17 @@ async def refresh_callback(event: slack_util.Event, match: Match) -> None:
     headers, points = await house_management.import_points()
     house_management.apply_house_points(points, await house_management.import_assignments())
     house_management.export_points(headers, points)
-    slack_util.get_slack().reply(event, "Force updated point values")
+    client.get_slack().reply(event, "Force updated point values")
 
 
 async def nag_callback(event: slack_util.Event, match: Match) -> None:
     # Get the day
     day = match.group(1).lower().strip()
     if not await nag_jobs(day):
-        slack_util.get_slack().reply(event,
-                                     "No jobs found. Check that the day is spelled correctly, with no extra symbols.\n"
-                                     "It is possible that all jobs have been signed off, as well.",
-                                     in_thread=True)
+        client.get_slack().reply(event,
+                                       "No jobs found. Check that the day is spelled correctly, with no extra symbols.\n"
+                                       "It is possible that all jobs have been signed off, as well.",
+                                 in_thread=True)
 
 
 # Wrapper so we can auto-call this as well
@@ -350,57 +350,57 @@ async def nag_jobs(day_of_week: str) -> bool:
             response += "(scroll missing. Please register for @ pings!)"
         response += "\n"
 
-    general_id = slack_util.get_slack().get_conversation_by_name("#general").id
-    slack_util.get_slack().send_message(response, general_id)
+    general_id = client.get_slack().get_conversation_by_name("#general").id
+    client.get_slack().send_message(response, general_id)
     return True
 
 
-signoff_hook = slack_util.ChannelHook(signoff_callback,
-                                      patterns=[
-                                          r"signoff\s+(.*)",
-                                          r"sign off\s+(.*)",
-                                      ],
-                                      channel_whitelist=["#housejobs"])
+signoff_hook = hooks.ChannelHook(signoff_callback,
+                                 patterns=[
+                                         r"signoff\s+(.*)",
+                                         r"sign off\s+(.*)",
+                                     ],
+                                 channel_whitelist=["#housejobs"])
 
-undo_hook = slack_util.ChannelHook(undo_callback,
-                                   patterns=[
-                                       r"unsignoff\s+(.*)",
-                                       r"undosignoff\s+(.*)",
-                                       r"undo signoff\s+(.*)",
-                                   ],
-                                   channel_whitelist=["#housejobs"])
-
-late_hook = slack_util.ChannelHook(late_callback,
-                                   patterns=[
-                                       r"marklate\s+(.*)",
-                                       r"mark late\s+(.*)",
-                                   ],
-                                   channel_whitelist=["#housejobs"])
-
-reset_hook = slack_util.ChannelHook(reset_callback,
-                                    patterns=[
-                                        r"reset signoffs",
-                                        r"reset sign offs",
-                                    ],
-                                    channel_whitelist=["#command-center"])
-
-nag_hook = slack_util.ChannelHook(nag_callback,
-                                  patterns=[
-                                      r"nagjobs\s+(.*)",
-                                      r"nag jobs\s+(.*)"
+undo_hook = hooks.ChannelHook(undo_callback,
+                              patterns=[
+                                      r"unsignoff\s+(.*)",
+                                      r"undosignoff\s+(.*)",
+                                      r"undo signoff\s+(.*)",
                                   ],
-                                  channel_whitelist=["#command-center"])
+                              channel_whitelist=["#housejobs"])
 
-reassign_hook = slack_util.ChannelHook(reassign_callback,
-                                       patterns=r"reassign\s+(.*?)-&gt;\s+(.+)",
-                                       channel_whitelist=["#housejobs"])
+late_hook = hooks.ChannelHook(late_callback,
+                              patterns=[
+                                      r"marklate\s+(.*)",
+                                      r"mark late\s+(.*)",
+                                  ],
+                              channel_whitelist=["#housejobs"])
 
-refresh_hook = slack_util.ChannelHook(refresh_callback,
-                                      patterns=[
-                                          "refresh points",
-                                          "update points"
-                                      ],
-                                      channel_whitelist=["#command-center"])
+reset_hook = hooks.ChannelHook(reset_callback,
+                               patterns=[
+                                       r"reset signoffs",
+                                       r"reset sign offs",
+                                   ],
+                               channel_whitelist=["#command-center"])
+
+nag_hook = hooks.ChannelHook(nag_callback,
+                             patterns=[
+                                     r"nagjobs\s+(.*)",
+                                     r"nag jobs\s+(.*)"
+                                 ],
+                             channel_whitelist=["#command-center"])
+
+reassign_hook = hooks.ChannelHook(reassign_callback,
+                                  patterns=r"reassign\s+(.*?)-&gt;\s+(.+)",
+                                  channel_whitelist=["#housejobs"])
+
+refresh_hook = hooks.ChannelHook(refresh_callback,
+                                 patterns=[
+                                         "refresh points",
+                                         "update points"
+                                     ],
+                                 channel_whitelist=["#command-center"])
 
 block_action = """
 [

@@ -4,7 +4,7 @@ from datetime import date, timedelta
 from typing import Tuple, List, Optional, Any
 
 import google_api
-import scroll_util
+from plugins import scroll_util
 
 SHEET_ID = "1f9p4H7TWPm8rAM4v_qr2Vc6lBiFNEmR-quTY9UtxEBI"
 
