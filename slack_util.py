@@ -275,11 +275,11 @@ class ClientWrapper(object):
         async def interr(request: web.Request):
             if request.can_read_body:
                 # Get the payload
-                body_dict = await request.json()
-                payload = body_dict["payload"]
                 print("Got a normal request: {}".format(request))
                 print(await request.read())
                 print("Interaction received: {}".format(payload))
+                body_dict = await request.json()
+                payload = body_dict["payload"]
 
                 # Handle each action separately
                 if "actions" in payload:
@@ -306,8 +306,6 @@ class ClientWrapper(object):
                 # Respond that everything is fine
                 return web.Response(status=200)
             else:
-                print("Got a weird request: {}".format(request))
-                print(await request.read())
                 # If we can't read it, get mad
                 return web.Response(status=400)
 
