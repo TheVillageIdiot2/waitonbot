@@ -277,9 +277,9 @@ class ClientWrapper(object):
                 # Get the payload
                 print("Got a normal request: {}".format(request))
                 print(await request.read())
-                print("Interaction received: {}".format(payload))
                 body_dict = await request.json()
                 payload = body_dict["payload"]
+                print("Interaction received: {}".format(payload))
 
                 # Handle each action separately
                 if "actions" in payload:
