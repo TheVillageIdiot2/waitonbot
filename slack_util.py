@@ -315,9 +315,9 @@ class ClientWrapper(object):
         # Asynchronously serve that boy up
         runner = web.AppRunner(app)
         await runner.setup()
-        site = web.TCPSite(runner, 'localhost', 31019)
+        site = web.TCPSite(runner, port=31019)
         await site.start()
-        # print("Server up")
+        print("Server up")
         # while True:
         #     await asyncio.sleep(30)
 
@@ -418,7 +418,7 @@ class ClientWrapper(object):
         if blocks:
             kwargs["blocks"] = blocks
 
-        return self.api_call("chat.postMessage", **kwargs)
+        return self.api_call(api_method, **kwargs)
 
     def send_message(self,
                      text: str,
