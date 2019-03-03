@@ -118,7 +118,7 @@ class InteractiveContext:
     trigger_id: str  # Used to open popups
     block_id: str  # Identifies the block of the interacted component
     action_id: str  # Identifies the interacted component
-    action_value: str  # Identifies the selected value in the component
+    action_value: Optional[str]  # Identifies the selected value in the component. None for buttons
 
 
 # If a file was additionally shared
@@ -300,7 +300,7 @@ class ClientWrapper(object):
                                                             payload["trigger_id"],
                                                             action["block_id"],
                                                             action["action_id"],
-                                                            action["value"])
+                                                            action.get("value"))
 
                         # Put it in the queue
                         await event_queue.put(ev)
