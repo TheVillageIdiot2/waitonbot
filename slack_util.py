@@ -283,7 +283,6 @@ class ClientWrapper(object):
                 # Handle each action separately
                 if "actions" in payload:
                     for action in payload["actions"]:
-
                         # Start building the event
                         ev = Event()
 
@@ -405,7 +404,8 @@ class ClientWrapper(object):
         else:
             return self.send_message(text, event.conversation.conversation_id)
 
-    def send_message(self, text: str, channel_id: str, thread: str = None, broadcast: bool = False) -> dict:
+    def _send_core(self, api_method: str, text: str, channel_id: str, thread: str, broadcast: bool,
+                   blocks: List[dict]) -> dict:
         """
         Copy of the internal send message function of slack, with some helpful options.
         Returns the JSON response.
@@ -415,8 +415,31 @@ class ClientWrapper(object):
             kwargs["thread_ts"] = thread
             if broadcast:
                 kwargs["reply_broadcast"] = True
+        if blocks:
+            kwargs["blocks"] = blocks
 
         return self.api_call("chat.postMessage", **kwargs)
+
+    def send_message(self,
+                     text: str,
+                     channel_id: str,
+                     thread: str = None,
+                     broadcast: bool = False,
+                     blocks: List[dict] = None) -> dict:
+        """
+        Wraps _send_core for normal messages
+        """
+        return self._send_core("chat.postMessage", text, channel_id, thread, broadcast, blocks)
+
+    def send_ephemeral(self,
+                       text: str,
+                       channel_id: str,
+                       thread: str = None,
+                       blocks: List[dict] = None) -> dict:
+        """
+        Wraps _send_core for ephemeral messages
+        """
+        return self._send_core("chat.postEphemeral", text, channel_id, thread, False, blocks)
 
     # Update slack data
 
