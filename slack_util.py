@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-import urllib
+import urllib.parse
 
 from aiohttp import web
 import asyncio
