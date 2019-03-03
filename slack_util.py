@@ -280,7 +280,7 @@ class ClientWrapper(object):
             if request.can_read_body:
                 # Get the payload
                 post_params = await request.post()
-                payload = post_params["payload"]
+                payload = json.loads(post_params["payload"])
                 print("Interaction received: {}".format(payload))
 
                 # Handle each action separately
