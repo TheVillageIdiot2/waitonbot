@@ -279,18 +279,8 @@ class ClientWrapper(object):
         async def interr(request: web.Request):
             if request.can_read_body:
                 # Get the payload
-                print("Got a normal request: {}".format(request))
-                print(await request.post())
-                content = await request.read()
-                print(content)
-                # Decode it
-                content = content.decode()
-                print(content)
-                # Unescape it
-                content = urllib.parse.unquote(content)
-                print(content)
-                body_dict = json.loads(content)
-                payload = body_dict["payload"]
+                post_params = await request.post()
+                payload = post_params["payload"]
                 print("Interaction received: {}".format(payload))
 
                 # Handle each action separately
