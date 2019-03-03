@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import urllib
 
 from aiohttp import web
 import asyncio
@@ -279,7 +280,7 @@ class ClientWrapper(object):
             if request.can_read_body:
                 # Get the payload
                 print("Got a normal request: {}".format(request))
-                content = await request.read()
+                content = urllib.parse.unquote(await request.read())
                 print(content)
                 body_dict = json.loads(content)
                 payload = body_dict["payload"]
