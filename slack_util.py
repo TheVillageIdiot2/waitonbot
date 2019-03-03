@@ -280,6 +280,7 @@ class ClientWrapper(object):
             if request.can_read_body:
                 # Get the payload
                 print("Got a normal request: {}".format(request))
+                print(await request.post())
                 content = await request.read()
                 print(content)
                 # Decode it
