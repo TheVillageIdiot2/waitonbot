@@ -77,7 +77,7 @@ class NotifyJobs(slack_util.Passive, JobNotifier):
             await asyncio.sleep(delay)
 
             # Now it is that time. Nag the jobs
-            job_commands.nag_jobs(self.get_day_of_week())
+            await job_commands.nag_jobs(self.get_day_of_week())
 
             # Sleep for a bit to prevent double shots
             await asyncio.sleep(10)
@@ -100,7 +100,7 @@ class RemindJobs(slack_util.Passive, JobNotifier):
             assigns: List[house_management.JobAssignment] = [a for a in assigns if self.is_job_valid(a)]
 
             # Now, we want to nag each person. If we don't actually know who they are, so be it.
-            print("Reminding!")
+            print("Reminding people who haven't yet done their jobs.")
             for a in assigns:
                 # Get the relevant slack ids
                 assignee_ids = await identifier.lookup_brother_userids(a.assignee)
