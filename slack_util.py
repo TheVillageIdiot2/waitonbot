@@ -278,6 +278,8 @@ class ClientWrapper(object):
                 body_dict = await request.json()
                 payload = body_dict["payload"]
 
+                print("Interaction received: {}".format(payload))
+
                 # Handle each action separately
                 if "actions" in payload:
                     for action in payload["actions"]:
