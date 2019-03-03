@@ -16,6 +16,10 @@ def fmt_work_dict(work_dict: dict) -> str:
 
 # noinspection PyUnusedLocal
 async def count_work_callback(event: slack_util.Event, match: Match) -> None:
+    # If no user, continue
+    if event.user is None:
+        return
+
     # Make an error wrapper
     verb = slack_util.VerboseWrapper(event)
 

@@ -69,6 +69,7 @@ class Event:
     message: Optional[MessageContext] = None
     thread: Optional[ThreadContext] = None
     interaction: Optional[InteractiveContext] = None
+    bot: Optional[BotContext] = None
 
 
 # If this was posted in a specific channel or conversation
@@ -87,6 +88,12 @@ class UserContext:
 
     def as_user(self) -> Optional[User]:
         return get_slack().get_user(self.user_id)
+
+
+# Same but for bots
+@dataclass
+class BotContext:
+    bot_id: str
 
 
 # Whether or not this is a threadable text message
@@ -168,6 +175,8 @@ def message_dict_to_event(update: dict) -> Event:
             event.conversation = ConversationContext(update["channel"])
         if "user" in update:
             event.user = UserContext(update["user"])
+        if "bot_id" in update:
+            event.bot = BotContext(update["bot_id"])
         if "thread_ts" in update:
             event.thread = ThreadContext(update["thread_ts"])
 
