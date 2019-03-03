@@ -313,7 +313,7 @@ class ClientWrapper(object):
 
         # Create the server
         app = web.Application()
-        app.add_routes([web.get('/bothttpcallback', interr)])
+        app.add_routes([web.post('/bothttpcallback', interr)])
 
         # Asynchronously serve that boy up
         runner = web.AppRunner(app)
