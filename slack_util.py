@@ -1,4 +1,7 @@
 from __future__ import annotations
+
+import json
+
 from aiohttp import web
 import asyncio
 import re
@@ -276,8 +279,9 @@ class ClientWrapper(object):
             if request.can_read_body:
                 # Get the payload
                 print("Got a normal request: {}".format(request))
-                print(await request.read())
-                body_dict = await request.json()
+                content = await request.read()
+                print(content)
+                body_dict = json.loads(content)
                 payload = body_dict["payload"]
                 print("Interaction received: {}".format(payload))
 
