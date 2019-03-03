@@ -280,7 +280,13 @@ class ClientWrapper(object):
             if request.can_read_body:
                 # Get the payload
                 print("Got a normal request: {}".format(request))
-                content = urllib.parse.unquote(await request.read())
+                content = await request.read()
+                print(content)
+                # Decode it
+                content = content.decode()
+                print(content)
+                # Unescape it
+                content = urllib.parse.unquote(content)
                 print(content)
                 body_dict = json.loads(content)
                 payload = body_dict["payload"]
