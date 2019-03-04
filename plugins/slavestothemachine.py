@@ -45,8 +45,8 @@ async def count_work_callback(event: slack_util.Event, match: Match) -> None:
     if len(new_work) == 0:
         if re.search(r'\s\d\s', text) is not None:
             client.get_slack().reply(event,
-                                         "If you were trying to record work, it was not recognized.\n"
-                                         "Use words {} or work will not be recorded".format(counted_data))
+                                     "If you were trying to record work, it was not recognized.\n"
+                                     "Use words {} or work will not be recorded".format(counted_data))
         return
 
     # Four: Knowing they did something, record to total work
