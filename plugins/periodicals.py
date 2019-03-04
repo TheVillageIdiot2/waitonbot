@@ -145,7 +145,7 @@ class TestPassive(hooks.Passive):
     """
 
     async def run(self) -> None:
-        lifespan = 5
+        lifespan = 60
         post_interval = 60
 
         def make_interactive_msg():
@@ -188,12 +188,11 @@ class TestPassive(hooks.Passive):
             # Make our callbacks
             async def on_click(event: slack_util.Event, response_str: str):
                 # Edit the message to show the result.
-                print("oh boy callback called")
                 client.get_slack().edit_message(response_str, event.conversation.conversation_id, event.message.ts, [])
 
             def on_expire():
-                print("BHEJKAHBKJDSH IM FUCKIN DEAD")
-                print(client.get_slack().edit_message("Timed out", botzone.id, msg_ts, []))
+                # Edit the message to show defeat.
+                client.get_slack().edit_message("Timed out", botzone.id, msg_ts, [])
 
             # Add a listener
             listener = hooks.InteractionListener(on_click,
@@ -205,7 +204,7 @@ class TestPassive(hooks.Passive):
             client.get_slack().add_hook(listener)
 
         # Iterate editing the message every n seconds, for quite some time
-        for i in range(10):
+        for i in range(120):
             make_interactive_msg()
             await asyncio.sleep(post_interval)
 
