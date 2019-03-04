@@ -1,16 +1,8 @@
-from typing import Match, List
+from typing import Match
 
 import hooks
 import client
 import slack_util
-
-
-def list_hooks_callback_gen(hooks: List[hooks.ChannelHook]) -> hooks.Callback:
-    # noinspection PyUnusedLocal
-    async def callback(event: slack_util.Event, match: Match) -> None:
-        client.get_slack().reply(event, "\n".join(hook.patterns for hook in hooks))
-
-    return callback
 
 
 # Gracefully reboot to reload code changes
