@@ -190,7 +190,7 @@ class TestPassive(hooks.Passive):
                 client.get_slack().edit_message(response, event.conversation.conversation_id, event.message.ts, None)
 
             def on_expire():
-                client.get_slack().edit_message("Timed out", "#botzone", msg_ts, None)
+                client.get_slack().edit_message("Timed out", "#botzone", msg_ts, [])
 
             # Add a listener
             listener = hooks.InteractionListener(on_click,

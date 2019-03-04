@@ -266,7 +266,7 @@ class ClientWrapper(object):
             raise ValueError("Can't broadcast a non-threaded message. Try again.")
 
         # Set blocks iff provided.
-        if blocks:
+        if blocks is not None:
             kwargs["blocks"] = blocks
 
         return self.api_call(api_method, **kwargs)
