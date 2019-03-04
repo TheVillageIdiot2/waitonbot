@@ -161,8 +161,8 @@ class InteractionListener(AbsHook):
 
     def __init__(self,
                  callback: Callable[[slack_util.Event, Union[ActionVal, str]], MsgAction],
-                 action_bindings: Optional[Dict[str, ActionVal]],
-                 # The action_id -> value mapping. Value fed to callback
+                 action_bindings: Optional[Dict[str, ActionVal]],  # The action_id -> value mapping. Value fed to callback
+                 conversation: slack_util.Conversation,  # Where the message is posted
                  message_ts: str,  # Which message contains the block we care about
                  lifetime: float,  # How long to keep listening
                  on_expire: Optional[Callable[[], None]]  # Function to call on death by timeout. For instance, if you want to delete the message, or edit it to say "timed out"
@@ -170,6 +170,7 @@ class InteractionListener(AbsHook):
         super().__init__(True)
         self.callback = callback
         self.bindings = action_bindings
+        self.conversation = conversation
         self.message_ts = message_ts
         self.lifetime = lifetime
         self.start_time = time()
@@ -187,13 +188,13 @@ class InteractionListener(AbsHook):
                 self.on_death()
             raise HookDeath()
 
-        # Next make sure we're actually a message
-        if not (event.interaction and event.message):
+        # Next make sure we've  got an interaction
+        if not (event.interaction and event.message and event.user and event.conversation):
             return None
 
         # Otherwise proceed normally
         # Is the msg the one we care about? If not, ignore
-        if event.message.ts != self.message_ts:
+        if event.message.ts != self.message_ts or event.conversation.get_conversation() != self.conversation:
             return None
 
         # Lookup the binding if we can/need to
