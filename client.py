@@ -4,6 +4,7 @@ import asyncio
 import json
 import sys
 import traceback
+from pprint import pprint
 from typing import List, Any, AsyncGenerator, Dict, Coroutine, TypeVar
 from typing import Optional
 
@@ -110,7 +111,8 @@ class ClientWrapper(object):
                 # Get the payload
                 post_params = await request.post()
                 payload = json.loads(post_params["payload"])
-                print("Interaction received: {}".format(payload))
+                print("\nInteraction Event received:")
+                pprint(payload)
 
                 # Handle each action separately
                 if "actions" in payload:
@@ -140,6 +142,7 @@ class ClientWrapper(object):
                 # Respond that everything is fine
                 return web.Response(status=200)
             else:
+                print("\nMalformed event received.")
                 # If we can't read it, get mad
                 return web.Response(status=400)
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pprint import pprint
 from time import sleep
 from typing import Optional, Generator, Callable, Union, Awaitable
 from typing import TypeVar
@@ -158,7 +159,8 @@ def message_stream(slack: SlackClient) -> Generator[Event, None, None]:
 
                     # Handle each
                     for update in update_list:
-                        print("Message received: {}".format(update))
+                        print("\nRTM Message received:")
+                        pprint(update)
                         yield message_dict_to_event(update)
 
         except (SlackNotConnected, OSError) as e:
