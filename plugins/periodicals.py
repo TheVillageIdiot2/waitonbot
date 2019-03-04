@@ -201,8 +201,8 @@ class TestPassive(hooks.Passive):
                                                  on_expire)
             client.get_slack().add_hook(listener)
 
-        # Iterate editing the message every 10 seconds, forever
-        while True:
+        # Iterate editing the message every n seconds, for quite some time
+        for i in range(120):
             make_interactive_msg()
             await asyncio.sleep(post_interval)
 
