@@ -44,6 +44,9 @@ def main() -> None:
     # Add automatic updating of users
     wrap.add_passive(periodicals.Updatinator(wrap, 120))
 
+    # Do test.
+    wrap.add_passive(periodicals.TestPassive())
+
     # Add nagloop
     wrap.add_passive(periodicals.NotifyJobs())
     wrap.add_passive(periodicals.RemindJobs())
@@ -53,24 +56,6 @@ def main() -> None:
     event_handling = wrap.handle_events()
     passive_handling = wrap.run_passives()
     both = asyncio.gather(event_handling, passive_handling)
-    #
-    # wrap.send_message("test", "#botzone", blocks=[
-    #     {
-    #         "type": "actions",
-    #         "block_id": "test_block_id",
-    #         "elements": [
-    #             {
-    #                 "type": "button",
-    #                 "action_id": "test_action_id",
-    #                 "text": {
-    #                     "type": "plain_text",
-    #                     "text": "Send payload",
-    #                     "emoji": False
-    #                 }
-    #             }
-    #         ]
-    #     }
-    # ])
 
     event_loop.run_until_complete(both)
 

@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Optional, List
 
 import hooks
+import slack_util
 from plugins import identifier, job_commands, house_management
 import client
 
@@ -125,6 +126,7 @@ class Updatinator(hooks.Passive):
     """
     Periodically updates the channels and users in the slack
     """
+
     def __init__(self, wrapper_to_update: client.ClientWrapper, interval_seconds: int):
         self.wrapper_target = wrapper_to_update
         self.interval = interval_seconds
@@ -135,3 +137,74 @@ class Updatinator(hooks.Passive):
             self.wrapper_target.update_channels()
             self.wrapper_target.update_users()
             await asyncio.sleep(self.interval)
+
+
+class TestPassive(hooks.Passive):
+    """
+    Stupid shit
+    """
+
+    async def run(self) -> None:
+        lifespan = 600
+        post_interval = 60
+
+        def make_interactive_msg():
+            # Send the message and recover the ts
+            response = client.get_slack().send_message("Select an option:", "#botzone", blocks=[
+                {
+                    "type": "actions",
+                    "block_id": "button_test",
+                    "elements": [
+                        {
+                            "type": "button",
+                            "action_id": "alpha_button",
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Alpha",
+                                "emoji": False
+                            }
+                        },
+                        {
+                            "type": "button",
+                            "action_id": "beta_button",
+                            "text": {
+                                "type": "plain_text",
+                                "text": "Beta",
+                                "emoji": False
+                            }
+                        }
+                    ]
+                }
+            ])
+            msg_ts = response["ts"]
+
+            # Make our mappings
+            button_responses = {
+                "alpha_button": "You clicked alpha. Good work.",
+                "beta_button": "You clicked beta. You must be so proud."
+            }
+
+            # Make our callbacks
+            async def on_click(event: slack_util.Event, response: str):
+                # Edit the message to show the result.
+                client.get_slack().edit_message(response, event.conversation.conversation_id, event.message.ts, None)
+
+            def on_expire():
+                client.get_slack().edit_message("Timed out", "#botzone", msg_ts, None)
+
+            # Add a listener
+            listener = hooks.InteractionListener(on_click,
+                                                 button_responses,
+                                                 client.get_slack().get_conversation_by_name("#botzone"),
+                                                 msg_ts,
+                                                 lifespan,
+                                                 on_expire)
+            client.get_slack().add_hook(listener)
+
+        # Iterate editing the message every 10 seconds, forever
+        while True:
+            make_interactive_msg()
+            await asyncio.sleep(post_interval)
+
+    def __init__(self):
+        pass
