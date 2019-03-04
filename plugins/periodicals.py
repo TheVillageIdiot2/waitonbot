@@ -187,9 +187,11 @@ class TestPassive(hooks.Passive):
             # Make our callbacks
             async def on_click(event: slack_util.Event, response: str):
                 # Edit the message to show the result.
+                print("oh boy callback called")
                 client.get_slack().edit_message(response, event.conversation.conversation_id, event.message.ts, [])
 
             def on_expire():
+                print("BHEJKAHBKJDSH IM FUCKIN DEAD")
                 client.get_slack().edit_message("Timed out", "#botzone", msg_ts, [])
 
             # Add a listener
