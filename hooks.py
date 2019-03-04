@@ -174,7 +174,7 @@ class InteractionListener(AbsHook):
         self.message_ts = message_ts
         self.lifetime = lifetime
         self.start_time = time()
-        self.on_death = on_expire
+        self.on_expire = on_expire
         self.dead = False
 
     def try_apply(self, event: slack_util.Event) -> Optional[MsgAction]:
@@ -184,8 +184,8 @@ class InteractionListener(AbsHook):
 
         # If so, give up the ghost
         if self.dead or should_expire:
-            if self.on_death:
-                self.on_death()
+            if self.on_expire and should_expire:  # Call on_expire callback if we expired and it exists
+                self.on_expire()
             raise HookDeath()
 
         # Next make sure we've  got an interaction
