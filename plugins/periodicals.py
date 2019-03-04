@@ -145,7 +145,7 @@ class TestPassive(hooks.Passive):
     """
 
     async def run(self) -> None:
-        lifespan = 600
+        lifespan = 180
         post_interval = 60
 
         def make_interactive_msg():
