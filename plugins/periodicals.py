@@ -145,7 +145,7 @@ class TestPassive(hooks.Passive):
     """
 
     async def run(self) -> None:
-        lifespan = 180
+        lifespan = 5
         post_interval = 60
 
         def make_interactive_msg():
@@ -177,6 +177,7 @@ class TestPassive(hooks.Passive):
                 }
             ])
             msg_ts = response["ts"]
+            botzone = client.get_slack().get_conversation_by_name("#botzone")
 
             # Make our mappings
             button_responses = {
@@ -185,26 +186,26 @@ class TestPassive(hooks.Passive):
             }
 
             # Make our callbacks
-            async def on_click(event: slack_util.Event, response: str):
+            async def on_click(event: slack_util.Event, response_str: str):
                 # Edit the message to show the result.
                 print("oh boy callback called")
-                client.get_slack().edit_message(response, event.conversation.conversation_id, event.message.ts, [])
+                client.get_slack().edit_message(response_str, event.conversation.conversation_id, event.message.ts, [])
 
             def on_expire():
                 print("BHEJKAHBKJDSH IM FUCKIN DEAD")
-                client.get_slack().edit_message("Timed out", "#botzone", msg_ts, [])
+                print(client.get_slack().edit_message("Timed out", botzone.id, msg_ts, []))
 
             # Add a listener
             listener = hooks.InteractionListener(on_click,
                                                  button_responses,
-                                                 client.get_slack().get_conversation_by_name("#botzone"),
+                                                 botzone,
                                                  msg_ts,
                                                  lifespan,
                                                  on_expire)
             client.get_slack().add_hook(listener)
 
         # Iterate editing the message every n seconds, for quite some time
-        for i in range(120):
+        for i in range(10):
             make_interactive_msg()
             await asyncio.sleep(post_interval)
 
