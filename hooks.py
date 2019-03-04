@@ -155,7 +155,8 @@ class InteractionListener(AbsHook):
     Guarantees Interaction, Message, User, and Conversation
     For fields that don't have a value of their own (such as buttons),
     one can provide a mapping of action_ids to values.
-    In either case, the value is fed as a parameter to the callback
+    In either case, the value is fed as a parameter to the callback.
+    The hook dies after successfully invoking callback.
     """
 
     def __init__(self,
@@ -164,7 +165,7 @@ class InteractionListener(AbsHook):
                  # The action_id -> value mapping. Value fed to callback
                  message_ts: str,  # Which message contains the block we care about
                  lifetime: float,  # How long to keep listening
-                 on_death: Optional[Callable[[], None]]  # Function to call on death. For instance, if you want to delete the message
+                 on_expire: Optional[Callable[[], None]]  # Function to call on death by timeout. For instance, if you want to delete the message, or edit it to say "timed out"
                  ):
         super().__init__(True)
         self.callback = callback
@@ -172,7 +173,7 @@ class InteractionListener(AbsHook):
         self.message_ts = message_ts
         self.lifetime = lifetime
         self.start_time = time()
-        self.on_death = on_death
+        self.on_death = on_expire
         self.dead = False
 
     def try_apply(self, event: slack_util.Event) -> Optional[MsgAction]:
@@ -202,9 +203,11 @@ class InteractionListener(AbsHook):
 
         # If the value is still none, we have an issue!
         if value is None:
-            raise ValueError("Couldn't find an appropriate value for interaction {}".format(event.interaction))
+            print("Couldn't find an appropriate value for interaction {}".format(event.interaction))
+            return None
 
         # Call the callback
+        self.dead = True
         return self.callback(event, value)
 
 
