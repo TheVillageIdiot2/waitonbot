@@ -19,6 +19,7 @@ Objects to represent things within a slack workspace
 """
 
 
+# noinspection PyUnresolvedReferences
 @dataclass
 class User:
     id: str
@@ -60,11 +61,19 @@ Objects to represent attributes an event may contain
 
 @dataclass
 class Event:
+    # Info on if this event ocurred in a particular conversation/channel, and if so which one
     conversation: Optional[ConversationContext] = None
+    # Info on if a particular user caused this event, and if so which one
     user: Optional[UserContext] = None
-    message: Optional[MessageContext] = None
+    # Info on if this event was a someone posting a message. For contents see related
+    post: Optional[PostMessageContext] = None
+    # The content of the most relevant message to this event
+    message: Optional[RelatedMessageContext] = None
+    # Info if this event was threaded on a parent message, and if so what that message was
     thread: Optional[ThreadContext] = None
-    interaction: Optional[InteractiveContext] = None
+    # Info if this event was an interaction, and if so with what
+    interaction: Optional[InteractionContext] = None
+    # Info about regarding if bot caused this event, and if so which one
     bot: Optional[BotContext] = None
 
 
@@ -92,20 +101,28 @@ class BotContext:
     bot_id: str
 
 
-# Whether or not this is a threadable text message
+# Whether this was a newly posted message
 @dataclass
-class MessageContext:
+class PostMessageContext:
+    pass
+
+
+# Whether this event was related to a particular message, but not specifically posting it.
+# To see if they posted it, check for PostMessageContext
+@dataclass
+class RelatedMessageContext:
     ts: str
     text: str
 
 
+# Whether or not this is a threadable text message
 @dataclass
 class ThreadContext:
     thread_ts: str
 
 
 @dataclass
-class InteractiveContext:
+class InteractionContext:
     response_url: str  # Used to confirm/respond to requests
     trigger_id: str  # Used to open popups
     block_id: str  # Identifies the block of the interacted component
@@ -166,7 +183,8 @@ def message_dict_to_event(update: dict) -> Event:
         # For now we only handle these basic types of messages involving text
         # TODO: Handle "unwrappeable" messages
         if "text" in update and "ts" in update:
-            event.message = MessageContext(update["ts"], update["text"])
+            event.message = RelatedMessageContext(update["ts"], update["text"])
+            event.post = PostMessageContext()
         if "channel" in update:
             event.conversation = ConversationContext(update["channel"])
         if "user" in update:
@@ -179,8 +197,6 @@ def message_dict_to_event(update: dict) -> Event:
     # TODO: Handle more types of events, including http data etc.
 
     return event
-
-
 
 
 """

@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import re
 from time import time
-from typing import Match, Any, Coroutine, Callable, Optional, Union, List
+from typing import Match, Any, Coroutine, Callable, Optional, Union, List, TypeVar, Dict
 
 import slack_util
 
 # Return type of an event callback
 MsgAction = Coroutine[Any, Any, None]
 
-# Type signature of an event callback function
-Callback = Callable[[slack_util.Event, Match], MsgAction]
+# Type signature of a message event callback function, for convenience
+MsgCallback = Callable[[slack_util.Event, Match], MsgAction]
 
 """
 Hooks
@@ -34,11 +34,12 @@ class AbsHook(object):
 
 class ChannelHook(AbsHook):
     """
-    Hook that handles messages in a variety of channels
+    Hook that handles messages in a variety of channels.
+    Guarantees prescence of Post, Related, Conversation, and User
     """
 
     def __init__(self,
-                 callback: Callback,
+                 callback: MsgCallback,
                  patterns: Union[str, List[str]],
                  channel_whitelist: Optional[List[str]] = None,
                  channel_blacklist: Optional[List[str]] = None,
@@ -69,7 +70,7 @@ class ChannelHook(AbsHook):
         Returns whether a message should be handled by this dict, returning a Match if so, or None
         """
         # Ensure that this is an event in a specific channel, with a text component
-        if not (event.conversation and event.message):
+        if not (event.conversation and event.post and event.message and event.user):
             return None
 
         # Fail if pattern invalid
@@ -104,9 +105,11 @@ class ChannelHook(AbsHook):
 class ReplyWaiter(AbsHook):
     """
     A special hook that only cares about replies to a given message.
+    Guarantees presence of Post, Message, Thread, User, and Conversation.
+    As such, it ignores bots.
     """
 
-    def __init__(self, callback: Callback, pattern: str, thread_ts: str, lifetime: float):
+    def __init__(self, callback: MsgCallback, pattern: str, thread_ts: str, lifetime: float):
         super().__init__(True)
         self.callback = callback
         self.pattern = pattern
@@ -125,7 +128,7 @@ class ReplyWaiter(AbsHook):
             raise HookDeath()
 
         # Next make sure we're actually a message
-        if not (event.message and event.thread):
+        if not (event.post and event.post and event.thread and event.conversation and event.user):
             return None
 
         # Otherwise proceed normally
@@ -134,12 +137,75 @@ class ReplyWaiter(AbsHook):
             return None
 
         # Does it match the regex? if not, ignore
-        match = re.match(self.pattern, event.message.text.strip(), flags=re.IGNORECASE)
+        match = re.match(self.pattern, event.post.text.strip(), flags=re.IGNORECASE)
         if match:
             self.dead = True
             return self.callback(event, match)
         else:
             return None
+
+
+# The associated generic type of a button - value mapping
+ActionVal = TypeVar("T")
+
+
+class InteractionListener(AbsHook):
+    """
+    Listens for replies on buttons.
+    Guarantees Interaction, Message, User, and Conversation
+    For fields that don't have a value of their own (such as buttons),
+    one can provide a mapping of action_ids to values.
+    In either case, the value is fed as a parameter to the callback
+    """
+
+    def __init__(self,
+                 callback: Callable[[slack_util.Event, Union[ActionVal, str]], MsgAction],
+                 action_bindings: Optional[Dict[str, ActionVal]],
+                 # The action_id -> value mapping. Value fed to callback
+                 message_ts: str,  # Which message contains the block we care about
+                 lifetime: float,  # How long to keep listening
+                 on_death: Optional[Callable[[], None]]  # Function to call on death. For instance, if you want to delete the message
+                 ):
+        super().__init__(True)
+        self.callback = callback
+        self.bindings = action_bindings
+        self.message_ts = message_ts
+        self.lifetime = lifetime
+        self.start_time = time()
+        self.on_death = on_death
+        self.dead = False
+
+    def try_apply(self, event: slack_util.Event) -> Optional[MsgAction]:
+        # First check: are we dead of age yet?
+        time_alive = time() - self.start_time
+        should_expire = time_alive > self.lifetime
+
+        # If so, give up the ghost
+        if self.dead or should_expire:
+            if self.on_death:
+                self.on_death()
+            raise HookDeath()
+
+        # Next make sure we're actually a message
+        if not (event.interaction and event.message):
+            return None
+
+        # Otherwise proceed normally
+        # Is the msg the one we care about? If not, ignore
+        if event.message.ts != self.message_ts:
+            return None
+
+        # Lookup the binding if we can/need to
+        value = event.interaction.action_value
+        if value is None and self.bindings is not None:
+            value = self.bindings.get(event.interaction.action_id)
+
+        # If the value is still none, we have an issue!
+        if value is None:
+            raise ValueError("Couldn't find an appropriate value for interaction {}".format(event.interaction))
+
+        # Call the callback
+        return self.callback(event, value)
 
 
 class Passive(object):
@@ -150,4 +216,3 @@ class Passive(object):
     async def run(self) -> None:
         # Run this passive routed through the specified slack client.
         raise NotImplementedError()
-

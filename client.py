@@ -121,11 +121,14 @@ class ClientWrapper(object):
                         # Get the user who clicked the button
                         ev.user = slack_util.UserContext(payload["user"]["id"])
 
+                        # Get the message that they clicked
+                        ev.message = slack_util.RelatedMessageContext(payload["message"]["ts"], payload["message"]["text"])
+
                         # Get the channel it was clicked in
                         ev.conversation = slack_util.ConversationContext(payload["channel"]["id"])
 
                         # Get the message this button/action was attached to
-                        ev.interaction = slack_util.InteractiveContext(payload["response_url"],
+                        ev.interaction = slack_util.InteractionContext(payload["response_url"],
                                                                        payload["trigger_id"],
                                                                        action["block_id"],
                                                                        action["action_id"],
@@ -185,7 +188,7 @@ class ClientWrapper(object):
     def get_conversation_by_name(self, conversation_identifier: str) -> Optional[slack_util.Conversation]:
         # If looking for a direct message, first lookup user, then fetch
         if conversation_identifier[0] == "@":
-            user_name = conversation_identifier
+            # user_name = conversation_identifier
 
             # Find the user by their name
             raise NotImplementedError("There wasn't a clear use case for this yet, so we've opted to just not use it")
@@ -237,41 +240,73 @@ class ClientWrapper(object):
             return self.send_message(text, event.conversation.conversation_id)
 
     def _send_core(self, api_method: str, text: str, channel_id: str, thread: str, broadcast: bool,
-                   blocks: List[dict]) -> dict:
+                   blocks: Optional[List[dict]]) -> dict:
         """
         Copy of the internal send message function of slack, with some helpful options.
         Returns the JSON response.
         """
-        kwargs = {"channel": channel_id, "text": text}
+        # Check that text exists if there are no blocks
+        if blocks is None and text is None:
+            raise ValueError("Must provide blocks or texts or both.")
+        elif text is None:
+            text = "_Block message. Open slack client to view_"
+
+        # Begin constructing kwargs with fields that _must_ exist
+        kwargs = {"channel": channel_id, "text": text, "as_user": True}
+
+        # Deduce thread stuff
         if thread:
             kwargs["thread_ts"] = thread
             if broadcast:
                 kwargs["reply_broadcast"] = True
+        elif broadcast:
+            raise ValueError("Can't broadcast a non-threaded message. Try again.")
+
+        # Set blocks iff provided.
         if blocks:
             kwargs["blocks"] = blocks
 
         return self.api_call(api_method, **kwargs)
 
     def send_message(self,
-                     text: str,
+                     text: Optional[str],
                      channel_id: str,
                      thread: str = None,
                      broadcast: bool = False,
-                     blocks: List[dict] = None) -> dict:
+                     blocks: Optional[List[dict]] = None) -> dict:
         """
         Wraps _send_core for normal messages
         """
         return self._send_core("chat.postMessage", text, channel_id, thread, broadcast, blocks)
 
     def send_ephemeral(self,
-                       text: str,
+                       text: Optional[str],
                        channel_id: str,
                        thread: str = None,
-                       blocks: List[dict] = None) -> dict:
+                       blocks: Optional[List[dict]] = None) -> dict:
         """
         Wraps _send_core for ephemeral messages
         """
         return self._send_core("chat.postEphemeral", text, channel_id, thread, False, blocks)
+
+    def edit_message(self, text: Optional[str], channel_id: str, message_ts: str, blocks: Optional[List[dict]] = None):
+        """
+        Edits a message.
+        """
+        # Check that text exists if there are no blocks
+        if blocks is None and text is None:
+            raise ValueError("Must provide blocks or texts or both.")
+        elif text is None:
+            text = "_Block message. Open slack client to view_"
+
+        # Set the default args
+        kwargs = {"ts": message_ts, "channel": channel_id, "text": text, "as_user": True}
+
+        # Set blocks if provided
+        if blocks is not None:
+            kwargs["blocks"] = blocks
+
+        return self.api_call("chat.update", **kwargs)
 
     # Update slack data
 
