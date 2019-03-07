@@ -26,7 +26,7 @@ async def count_work_callback(event: slack_util.Event, match: Match) -> None:
     verb = slack_util.VerboseWrapper(event)
 
     # Tidy the text
-    text = event.message.text.strip()
+    text = event.message.text.strip().lower()
 
     # Couple things to work through.
     # One: Who sent the message?
