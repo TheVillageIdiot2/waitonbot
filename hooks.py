@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import re
 from time import time
 from typing import Match, Any, Coroutine, Callable, Optional, Union, List, TypeVar, Dict
@@ -204,7 +205,7 @@ class InteractionListener(AbsHook):
 
         # If the value is still none, we have an issue!
         if value is None:
-            print("Couldn't find an appropriate value for interaction {}".format(event.interaction))
+            logging.error("Couldn't find an appropriate value for interaction {}".format(event.interaction))
             return None
 
         # Call the callback

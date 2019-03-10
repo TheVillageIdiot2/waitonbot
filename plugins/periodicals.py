@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from datetime import datetime
 from typing import Optional, List
 
@@ -102,7 +103,7 @@ class RemindJobs(hooks.Passive, JobNotifier):
             assigns: List[house_management.JobAssignment] = [a for a in assigns if self.is_job_valid(a)]
 
             # Now, we want to nag each person. If we don't actually know who they are, so be it.
-            print("Reminding people who haven't yet done their jobs.")
+            logging.info("Scheduled reminding people who haven't yet done their jobs.")
             for a in assigns:
                 # Get the relevant slack ids
                 assignee_ids = await identifier.lookup_brother_userids(a.assignee)
@@ -116,7 +117,7 @@ class RemindJobs(hooks.Passive, JobNotifier):
 
                 # Warn on failure
                 if not success:
-                    print("Tried to nag {} but couldn't find their slack id".format(a.assignee.name))
+                    logging.warning("Tried to nag {} but couldn't find their slack id".format(a.assignee.name))
 
             # Take a break to ensure no double-shots
             await asyncio.sleep(10)
@@ -204,7 +205,7 @@ class TestPassive(hooks.Passive):
             client.get_slack().add_hook(listener)
 
         # Iterate editing the message every n seconds, for quite some time
-        for i in range(120):
+        for i in range(10):
             make_interactive_msg()
             await asyncio.sleep(post_interval)
 

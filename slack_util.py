@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
-from pprint import pprint
+from pprint import pformat
 from time import sleep
 from typing import Optional, Generator, Callable, Union, Awaitable
 from typing import TypeVar
@@ -9,11 +10,8 @@ from typing import TypeVar
 from slackclient import SlackClient
 from slackclient.client import SlackNotConnected
 
-# Enable to do single-threaded and have better exceptions
-import plugins
 import client
-
-DEBUG_MODE = False
+import plugins
 
 """
 Objects to represent things within a slack workspace
@@ -152,26 +150,24 @@ def message_stream(slack: SlackClient) -> Generator[Event, None, None]:
     while True:
         try:
             if slack.rtm_connect(with_team_state=False, auto_reconnect=True):
-                print("Waiting for messages")
+                logging.info("Waiting for messages")
                 while True:
                     sleep(0.1)
                     update_list = slack.rtm_read()
 
                     # Handle each
                     for update in update_list:
-                        print("\nRTM Message received:")
-                        pprint(update)
+                        logging.info("RTM Message received")
+                        logging.debug(pformat(update))
                         yield message_dict_to_event(update)
 
         except (SlackNotConnected, OSError) as e:
-            print("Error while reading messages:")
-            print(e)
+            logging.exception("Error while reading messages.")
         except (ValueError, TypeError) as e:
-            print("Malformed message... Restarting connection")
-            print(e)
+            logging.exception("Malformed message... Restarting connection")
 
         sleep(5)
-        print("Connection failed - retrying")
+        logging.warning("Connection failed - retrying")
 
 
 def message_dict_to_event(update: dict) -> Event:

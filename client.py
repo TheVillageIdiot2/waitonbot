@@ -4,7 +4,8 @@ import asyncio
 import json
 import sys
 import traceback
-from pprint import pprint
+import logging
+from pprint import pformat
 from typing import List, Any, AsyncGenerator, Dict, Coroutine, TypeVar
 from typing import Optional
 
@@ -13,9 +14,6 @@ from slackclient import SlackClient
 
 import hooks
 import slack_util
-
-# Enable to do single-threaded and have better exceptions
-DEBUG_MODE = False
 
 """
 Objects to wrap slack connections
@@ -81,7 +79,7 @@ class ClientWrapper(object):
         async def handle_task_loop():
             async for t3 in self.spool_tasks(queue):
                 sys.stdout.flush()
-                if DEBUG_MODE:
+                if settings.SINGLE_THREAD_TASKS:
                     await t3
 
         # Handle them all
@@ -111,8 +109,8 @@ class ClientWrapper(object):
                 # Get the payload
                 post_params = await request.post()
                 payload = json.loads(post_params["payload"])
-                print("\nInteraction Event received:")
-                pprint(payload)
+                logging.info("\nInteraction Event received:")
+                logging.debug(pformat(payload))
 
                 # Handle each action separately
                 if "actions" in payload:
@@ -142,7 +140,7 @@ class ClientWrapper(object):
                 # Respond that everything is fine
                 return web.Response(status=200)
             else:
-                print("\nMalformed event received.")
+                logging.error("\nMalformed event received.")
                 # If we can't read it, get mad
                 return web.Response(status=400)
 
@@ -155,7 +153,7 @@ class ClientWrapper(object):
         await runner.setup()
         site = web.TCPSite(runner, port=31019)
         await site.start()
-        print("Server up")
+        logging.info("Server up")
         # while True:
         #     await asyncio.sleep(30)
 
@@ -174,7 +172,7 @@ class ClientWrapper(object):
 
                     # If we get a coro back, then task it up and set consumption appropriately
                     if coro is not None:
-                        print("Spawned task. Now {} running total.".format(len(asyncio.all_tasks())))
+                        log.debug("Spawned task. Now {} running total.".format(len(asyncio.all_tasks())))
                         yield asyncio.create_task(_exception_printing_task(coro))
                         if hook.consumes:
                             break
@@ -351,7 +349,7 @@ class ClientWrapper(object):
                     break
 
             else:
-                print("Warning: failed to retrieve channels. Message: {}".format(channel_dicts))
+                logging.warning("Failed to retrieve channels. Message: {}".format(channel_dicts))
                 break
         self.conversations = new_dict
 
@@ -390,7 +388,7 @@ class ClientWrapper(object):
                     break
 
             else:
-                print("Warning: failed to retrieve users")
+                logging.warning("Warning: failed to retrieve users")
                 break
         self.users = new_dict
 

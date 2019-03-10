@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import List, Match, Callable, TypeVar, Optional, Iterable, Any, Coroutine
 
@@ -25,7 +26,7 @@ async def alert_user(brother: scroll_util.Brother, saywhat: str) -> None:
 
     # Warn if we never find
     if not succ:
-        print("Warning: unable to find dm for brother {}".format(brother))
+        logging.warning("Unable to find dm conversation for brother {}".format(brother))
 
 
 # Generic type

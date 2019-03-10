@@ -3,10 +3,15 @@ import textwrap
 from typing import Match
 
 import hooks
+import settings
 from plugins import identifier, job_commands, management_commands, periodicals, scroll_util, slavestothemachine
 import client
 import slack_util
 
+
+import logging
+
+logging.basicConfig(filename="run.log", filemode="w", level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 
 def main() -> None:
     wrap = client.get_slack()
@@ -52,7 +57,7 @@ def main() -> None:
     wrap.add_passive(periodicals.RemindJobs())
 
     event_loop = asyncio.get_event_loop()
-    event_loop.set_debug(slack_util.DEBUG_MODE)
+    event_loop.set_debug(settings.USE_ASYNC_DEBUG_MODE)
     event_handling = wrap.handle_events()
     passive_handling = wrap.run_passives()
     both = asyncio.gather(event_handling, passive_handling)
