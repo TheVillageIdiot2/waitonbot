@@ -15,8 +15,8 @@ async def reboot_callback(event: slack_util.Event, match: Match) -> None:
 
 
 async def post_log_callback(event: slack_util.Event, match: Match) -> None:
-    # Get the last 500 lines of log of the specified severity or higher
-    count = 500
+    # Get the last n lines of log of the specified severity or higher
+    count = 100
     lines = []
 
     # numerically rank the debug severity
