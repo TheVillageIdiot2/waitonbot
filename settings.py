@@ -9,3 +9,5 @@ SINGLE_THREAD_TASKS = False
 # Note that this occasionally will give us warnings if SINGLE_THREAD_TAKS is False (which it usually is)
 # howver, these warnings are harmless, as regardless of if aa task is awaited it still does its job
 USE_ASYNC_DEBUG_MODE = False
+
+LOGFILE = "run.log"

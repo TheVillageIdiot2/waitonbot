@@ -11,7 +11,7 @@ import slack_util
 
 import logging
 
-logging.basicConfig(filename="run.log", filemode="w", level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+logging.basicConfig(filename=settings.LOGFILE, filemode="w", level=logging.DEBUG, format='#!# %(levelname)s - %(asctime)s \n%(message)s \n', datefmt='%m/%d/%Y %I:%M:%S %p')
 
 def main() -> None:
     wrap = client.get_slack()
@@ -27,6 +27,7 @@ def main() -> None:
 
     # Add kill switch
     wrap.add_hook(management_commands.reboot_hook)
+    wrap.add_hook(management_commands.log_hook)
 
     # Add towel rolling
     wrap.add_hook(slavestothemachine.count_work_hook)

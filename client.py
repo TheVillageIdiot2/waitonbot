@@ -13,6 +13,7 @@ from aiohttp import web
 from slackclient import SlackClient
 
 import hooks
+import settings
 import slack_util
 
 """
@@ -172,7 +173,7 @@ class ClientWrapper(object):
 
                     # If we get a coro back, then task it up and set consumption appropriately
                     if coro is not None:
-                        log.debug("Spawned task. Now {} running total.".format(len(asyncio.all_tasks())))
+                        logging.debug("Spawned task. Now {} running total.".format(len(asyncio.all_tasks())))
                         yield asyncio.create_task(_exception_printing_task(coro))
                         if hook.consumes:
                             break
@@ -253,7 +254,7 @@ class ClientWrapper(object):
             text = "_Block message. Open slack client to view_"
 
         # Begin constructing kwargs with fields that _must_ exist
-        kwargs = {"channel": channel_id, "text": text, "as_user": True}
+        kwargs = {"channel": channel_id, "text": text, "as_user": True, "parse": True}
 
         # Deduce thread stuff
         if thread:
@@ -405,7 +406,9 @@ def get_slack() -> ClientWrapper:
 Miscellania
 """
 
-A, B, C = TypeVar("A"), TypeVar("B"), TypeVar("C")
+A = TypeVar("A")
+B = TypeVar("B")
+C = TypeVar("C")
 
 
 # Prints exceptions instead of silently dropping them in async tasks
