@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, List
 
 import hooks
@@ -11,8 +11,16 @@ import client
 
 def seconds_until(target: datetime) -> float:
     curr = datetime.now()
+
+    # Compute seconds betwixt
     delta = target - curr
-    return delta.seconds
+    ds = delta.seconds
+
+    # Lower bound to 0
+    if ds < 0:
+        return 0
+    else:
+        return delta.seconds
 
 
 class ItsTenPM(hooks.Passive):
@@ -37,7 +45,7 @@ class ItsTenPM(hooks.Passive):
 # Shared behaviour
 class JobNotifier:
     @staticmethod
-    def get_day_of_week() -> str:
+    def get_day_of_week(time) -> str:
         """
         Gets the current day of week as a str
         """
@@ -47,7 +55,7 @@ class JobNotifier:
                 "Thursday",
                 "Friday",
                 "Saturday",
-                "Sunday"][datetime.now().weekday()]
+                "Sunday"][time.weekday()]
 
     @staticmethod
     def is_job_valid(a: Optional[house_management.JobAssignment]):
@@ -55,7 +63,7 @@ class JobNotifier:
         if a is None:
             return False
         # If its not today, we shouldn't nag
-        if a.job.day_of_week.lower() != JobNotifier.get_day_of_week().lower():
+        if a.job.day_of_week.lower() != JobNotifier.get_day_of_week(datetime.now()).lower():
             return False
         # If it is unassigned, we can't nag
         if a.assignee is None:
@@ -70,17 +78,22 @@ class JobNotifier:
 
 
 class NotifyJobs(hooks.Passive, JobNotifier):
+    # Auto-does the nag jobs thing
     async def run(self) -> None:
         while True:
             # Get the "Start" of the current day (Say, 10AM)
-            today_remind_time = datetime.now().replace(hour=10, minute=00, second=0)
+            next_remind_time = datetime.now().replace(hour=10, minute=00, second=0)
+
+            # If we've accidentally made it in the past somehow, bump it up one date
+            while datetime.now() > next_remind_time:
+                next_remind_time += timedelta(days=1)
 
             # Sleep until that time
-            delay = seconds_until(today_remind_time)
+            delay = seconds_until(next_remind_time)
             await asyncio.sleep(delay)
 
             # Now it is that time. Nag the jobs
-            await job_commands.nag_jobs(self.get_day_of_week())
+            await job_commands.nag_jobs(self.get_day_of_week(next_remind_time))
 
             # Sleep for a bit to prevent double shots
             await asyncio.sleep(10)
@@ -90,10 +103,14 @@ class RemindJobs(hooks.Passive, JobNotifier):
     async def run(self) -> None:
         while True:
             # Get the end of the current day (Say, 10PM)
-            today_remind_time = datetime.now().replace(hour=22, minute=00, second=0)
+            next_remind_time = datetime.now().replace(hour=22, minute=00, second=0)
+
+            # If we've accidentally made it in the past somehow, bump it up one date
+            while datetime.now() > next_remind_time:
+                next_remind_time += timedelta(days=1)
 
             # Sleep until that time
-            delay = seconds_until(today_remind_time)
+            delay = seconds_until(next_remind_time)
             await asyncio.sleep(delay)
 
             # Now it is that time. Get the current jobs
