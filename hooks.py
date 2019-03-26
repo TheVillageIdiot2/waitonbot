@@ -71,7 +71,7 @@ class ChannelHook(AbsHook):
         Returns whether a message should be handled by this dict, returning a Match if so, or None
         """
         # Ensure that this is an event in a specific channel, with a text component
-        if not (event.conversation and event.post and event.message and event.user):
+        if not (event.conversation and event.was_post and event.message and event.user):
             return None
 
         # Fail if pattern invalid
@@ -129,7 +129,7 @@ class ReplyWaiter(AbsHook):
             raise HookDeath()
 
         # Next make sure we're actually a message
-        if not (event.post and event.post and event.thread and event.conversation and event.user):
+        if not (event.was_post and event.was_post and event.thread and event.conversation and event.user):
             return None
 
         # Otherwise proceed normally
@@ -138,7 +138,7 @@ class ReplyWaiter(AbsHook):
             return None
 
         # Does it match the regex? if not, ignore
-        match = re.match(self.pattern, event.post.text.strip(), flags=re.IGNORECASE)
+        match = re.match(self.pattern, event.message.text.strip(), flags=re.IGNORECASE)
         if match:
             self.dead = True
             return self.callback(event, match)
@@ -147,7 +147,7 @@ class ReplyWaiter(AbsHook):
 
 
 # The associated generic type of a button - value mapping
-ActionVal = TypeVar("T")
+ActionVal = TypeVar("ActionVal")
 
 
 class InteractionListener(AbsHook):

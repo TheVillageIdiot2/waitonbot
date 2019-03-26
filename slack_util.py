@@ -65,7 +65,7 @@ class Event:
     # Info on if a particular user caused this event, and if so which one
     user: Optional[UserContext] = None
     # Info on if this event was a someone posting a message. For contents see related
-    post: Optional[PostMessageContext] = None
+    was_post: Optional[PostMessageContext] = None
     # The content of the most relevant message to this event
     message: Optional[RelatedMessageContext] = None
     # Info if this event was threaded on a parent message, and if so what that message was
@@ -182,7 +182,7 @@ def message_dict_to_event(update: dict) -> Event:
         # TODO: Handle "unwrappeable" messages
         if "text" in update and "ts" in update:
             event.message = RelatedMessageContext(update["ts"], update["text"])
-            event.post = PostMessageContext()
+            event.was_post = PostMessageContext()
         if "channel" in update:
             event.conversation = ConversationContext(update["channel"])
         if "user" in update:
