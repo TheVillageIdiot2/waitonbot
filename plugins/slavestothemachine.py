@@ -22,6 +22,10 @@ async def count_work_callback(event: slack_util.Event, match: Match) -> None:
     if event.user is None:
         return
 
+    # If bot, continue
+    if event.bot is not None:
+        return
+
     # Make an error wrapper
     verb = slack_util.VerboseWrapper(event)
 
