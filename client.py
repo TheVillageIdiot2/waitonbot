@@ -417,5 +417,7 @@ async def _exception_printing_task(c: Coroutine[A, B, C]) -> Coroutine[A, B, C]:
     try:
         return await c
     except Exception:
-        traceback.print_exc()
+        output = traceback.format_exc()
+        print(output)
+        get_slack().send_message(output, "#botzone")
         raise

@@ -115,6 +115,7 @@ async def lookup_slackid_brother(slack_id: str) -> scroll_util.Brother:
                 return scroll_util.find_by_scroll(scroll)
             except (KeyError, ValueError):
                 raise scroll_util.BrotherNotFound("Slack id {} not tied to brother".format(slack_id))
+    raise scroll_util.BrotherNotFound("Couldn't find an appropriate brother for slackid {}.".format(slack_id))
 
 
 async def lookup_brother_userids(brother: scroll_util.Brother) -> List[str]:
