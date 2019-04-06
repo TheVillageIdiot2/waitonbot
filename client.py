@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import pprint
 import sys
 import traceback
 import logging
@@ -268,7 +269,10 @@ class ClientWrapper(object):
         if blocks is not None:
             kwargs["blocks"] = blocks
 
-        return self.api_call(api_method, **kwargs)
+        result = self.api_call(api_method, **kwargs)
+
+        logging.info("Tried to send message \"{}\". Got response:\n {}".format(text, pprint.pformat(result)))
+        return result
 
     def send_message(self,
                      text: Optional[str],
