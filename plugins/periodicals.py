@@ -5,8 +5,34 @@ from typing import Optional, List
 
 import hooks
 import slack_util
-from plugins import identifier, job_commands, house_management
+from plugins import identifier, job_commands, house_management, laundry, scroll_util
 import client
+
+#Notifies people of their laundry being done
+#TODO: Think of a solution to the problem that if all machines are empty it can wait 60 mins 
+# even if a brother starts a machine with 30 mins just after this check
+class LaundryDone(hooks.Passive):
+    async def run(self) -> None:
+        while True:
+            machineList = ["D1", "D2", "D3", "W1", "W2"]
+            #Time until next load is done and notifications need to be sent
+            nextDoneMin = 60
+            room = laundry.LaundryRoom()
+            occu = await room.check_occupany_not()
+            for i in range(len(occu)):
+                if len(occu[i]) <= 1:
+                    pass
+                elif occu[i][2] <= 0 and occu[i][3] == False:
+                    room.updateNotification(i)
+                    #create a brother here with the info
+                    brother = scroll_util.Brother(occu[i][0], int(occu[i][1]))
+                    slackID = await identifier.lookup_brother_userids(brother)
+                    for id in slackID:
+                        msg = "Your laundry is done in machine {}".format(machineList[i])
+                        client.get_slack().send_message(msg, id)
+                elif occu[i][2] < nextDoneMin:
+                    nextDoneMin = occu[i][2]
+            await asyncio.sleep(nextDoneMin*60)
 
 
 def seconds_until(target: datetime) -> float:

@@ -51,6 +51,7 @@ def main() -> None:
     wrap.add_hook(laundry.check_hook)
     wrap.add_hook(laundry.start_hook)
     wrap.add_hook(laundry.help_hook)
+    wrap.add_hook(laundry.clear_hook)
     #TODO: THIS
     #wrap.add_passive(periodicals.LaundryDone)
 
