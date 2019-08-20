@@ -4,7 +4,7 @@ from typing import Match
 
 import hooks
 import settings
-from plugins import identifier, job_commands, management_commands, periodicals, scroll_util, slavestothemachine
+from plugins import identifier, job_commands, management_commands, periodicals, scroll_util, slavestothemachine, laundry
 import client
 import slack_util
 
@@ -46,6 +46,13 @@ def main() -> None:
 
     # Add boozebot
     # wrap.add_passive(periodicals.ItsTenPM())
+
+    #Add laundry
+    wrap.add_hook(laundry.check_hook)
+    wrap.add_hook(laundry.start_hook)
+    wrap.add_hook(laundry.help_hook)
+    #TODO: THIS
+    #wrap.add_passive(periodicals.LaundryDone)
 
     # Add automatic updating of users
     wrap.add_passive(periodicals.Updatinator(wrap, 120))
@@ -91,7 +98,7 @@ async def help_callback(event: slack_util.Event, match: Match) -> None:
     Also of note is that in #slavestothemachine, any wording of the format "replaced <number>", or similarly with 
     "washed", "dried", "rolled", or "flaked", will track your effort for the week.
     
-    Github is https://github.com/TheVillageIdiot2/waitonbot
+    Github is https://github.com/whitespine/waitonbot
     Man in charge is Jacob Henry, but nothing lasts forever.
     """))
     # Do not let my efforts fall to waste. Its a pitious legacy but its something, at least, to maybe tide the
