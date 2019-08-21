@@ -25,6 +25,7 @@ class LaundryRoom(metaclass=SingletonMeta):
     async def check_occupany(self):
         now = datetime.datetime.now()
 
+        #Do some math to get how many minutes remain when at that exact moment
         D1Time = (now - (self.D1[2] + datetime.timedelta(minutes=self.D1[3]))).total_seconds()
         D1Info = (self.D1[0], self.D1[1], 0 if D1Time else int(D1Time/-60))
 
@@ -42,28 +43,7 @@ class LaundryRoom(metaclass=SingletonMeta):
 
         return (D1Info, D2Info, D3Info, W1Info, W2Info)
 
-    #Returns the normal occupancy info plus if they have been notified already
-    async def check_occupany_not(self):
-        now = datetime.datetime.now()
-
-        D1Time = (now - (self.D1[2] + datetime.timedelta(minutes=self.D1[3]))).total_seconds()
-        D1Info = (self.D1[0], self.D1[1], 0 if D1Time else int(D1Time/-60))
-
-        D2Time = (now - (self.D2[2] + datetime.timedelta(minutes=self.D2[3]))).total_seconds()
-        D2Info = (self.D2[0], self.D2[1], 0 if D2Time else int(D2Time/-60))
-
-        D3Time = (now - (self.D3[2] + datetime.timedelta(minutes=self.D3[3]))).total_seconds()
-        D3Info = (self.D3[0], self.D3[1], 0 if D3Time else int(D3Time/-60))
-
-        W1Time = (now - (self.W1[2] + datetime.timedelta(minutes=self.W1[3]))).total_seconds()
-        W1Info = (self.W1[0], self.W1[1], 0 if W1Time else int(W1Time/-60))
-
-        W2Time = (now - (self.W2[2] + datetime.timedelta(minutes=self.W2[3]))).total_seconds()
-        W2Info = (self.W2[0], self.W2[1], 0 if W2Time else int(W2Time/-60))
-
-        return (D1Info, D2Info, D3Info, W1Info, W2Info)
-
-    #Starts the designated machine by assigning it the info
+    #"Starts" the designated machine by assigning it the info
     def start_machine(self, machineNum, info):
         if machineNum == 1:
             self.D1 = info
@@ -89,12 +69,14 @@ class SingletonMeta(type):
         return cls._instance
 
 
-#For checking the occupancy status of the laundry room
+#Checks the occupancy status of the laundry room
+#Not sure if the formatting of the output is fully correct
 async def check_callback(event: slack_util.Event, match: Match) -> None:
     laundry = LaundryRoom()
     tempResult = "-     D1\nD2    W1\nD3    W2\nD1: {} minutes left\nD2: {} minutes left\nD3: {} minutes left\nW1: {} minutes left\nW2: {} minutes left"
     occupany = await laundry.check_occupany()
-    result = tempResult.format(occupany[0], occupany[1], occupany[2], occupany[3], occupany[4])
+    #Formats it so if its empty it will say empty else it will give the actual info
+    result = tempResult.format(occupany[0] if len(occupany[0]) else "Empty", occupany[1] if len(occupany[1]) else "Empty", occupany[2] if len(occupany[2]) else "Empty", occupany[3] if len(occupany[3]) else "Empty", occupany[4] if len(occupany[4]) else "Empty")
     client.get_slack().reply(event, result)
 
 
@@ -109,8 +91,9 @@ async def start_callback(event: slack_util.Event, match: Match) -> None:
     timeRemaining = match.group(3).strip()
 
     brother = await verb(scroll_util.find_by_scroll(scroll))
-
     info = [brother, int(scroll), datetime.datetime.now(), int(timeRemaining)]
+
+    #This cluster is for figuring out which machine they actually want to start
     if machine[0].lower() == "w":
         if machine[1] == "1":
             laundry.start_machine(4, info)
@@ -149,6 +132,7 @@ async def clear_callback(event: slack_util.Event, match: Match) -> None:
     laundry = LaundryRoom()
     machine = match.group(1).strip()
 
+    #Same as before for finding actual machine from input
     if machine[0].lower() == "w":
         if machine[1] == "1":
             laundry.start_machine(4, info)
