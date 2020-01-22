@@ -804,3 +804,23 @@ scroll~name
 1100~Ankur Gupta
 1101~Prat Sankar
 1102~David Tomer
+2966~Alex Kobsa
+3055~Igor De Moraes
+3056~Theo Konstantopoulos
+3060~Connor Bourgeois
+3068~Ilyas Salhi
+3069~Ralph Perry
+3075~Max Westreich
+3078~Matt St. Jean
+3080~Ethan Turett
+3081~Arden Carling
+3082~David Rodriguez
+3084~Reily Siegel
+3085~Steven Tran
+3090~Sam Presutti
+3092~Caleb Farwell
+3095~John Winship
+3096~Dylan Shanes
+3100~Sam Bello
+3101~Chris Lee
+3102~Marko Vila
