@@ -762,7 +762,7 @@ scroll~name
 1051~Luke Gardner
 1052~Jason Karlin
 1054~Matthew Fortmeyer
-1055~Matther Figueroa
+1055~Matthew Figueroa
 1056~Nolan Greig
 1057~Jack Riley
 1058~Sean Brady
@@ -813,6 +813,7 @@ scroll~name
 3068~Ilyas Salhi
 3069~Ralph Perry
 3075~Max Westreich
+3076~Cooper Ducharme
 3078~Matt St. Jean
 3080~Ethan Turett
 3081~Arden Carling
@@ -823,6 +824,7 @@ scroll~name
 3092~Caleb Farwell
 3095~John Winship
 3096~Dylan Shanes
+3099~Finn Finnigan
 3100~Sam Bello
 3101~Chris Lee
 3102~Marko Vila
