@@ -663,6 +663,7 @@ scroll~name
 922~William Henry Wright
 924~Derek Allen Carey
 925~Justin Mathews
+926~Eric Zandrow
 927~Alex William Rebh
 928~Ned Shelton
 929~Shrid Ambady
@@ -687,13 +688,14 @@ scroll~name
 960~Philip Radder
 961~Christian Gonzalez
 962~Nicholas Hewgley
-964~William Thomas Frankian - 926 Eric Zandrow
+964~William Thomas Frankian
 965~Mark Swanson
 966~Jeffrey Collard
 967~John Scarborough
 968~Nathan Ferron
 969~Alex Henning
 970~Zhi Hao "Ed" Li
+971~Nicholas King
 972~Eric Willcox, III
 974~David Kelly
 975~Nathan Curtis
@@ -703,7 +705,7 @@ scroll~name
 979~Andrew Davis
 980~William Spurgeon
 981~Pete Guarino
-982~Robert Flemming - 971 Nicholas King
+982~Robert Flemming
 984~David Moore
 985~Tommy Trieu
 986~Christopher Connor
@@ -772,7 +774,7 @@ scroll~name
 1065~James GoldStein
 1066~Noah Baisden
 1067~Daniel Corwin
-1068~Phillipe Lessard
+1068~Philippe Lessard
 1069~Johnny Chea
 1070~Jordan Gold
 1071~Ryan Suarez
