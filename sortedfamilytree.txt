@@ -806,25 +806,21 @@ scroll~name
 1100~Ankur Gupta
 1101~Prat Sankar
 1102~David Tomer
-2966~Alex Kobsa
-3055~Igor De Moraes
-3056~Theo Konstantopoulos
-3060~Connor Bourgeois
-3068~Ilyas Salhi
-3069~Ralph Perry
-3075~Max Westreich
-3076~Cooper Ducharme
-3078~Matt St. Jean
-3080~Ethan Turett
-3081~Arden Carling
-3082~David Rodriguez
-3084~Reily Siegel
-3085~Steven Tran
-3090~Sam Presutti
-3092~Caleb Farwell
-3095~John Winship
-3096~Dylan Shanes
-3099~Finn Finnigan
-3100~Sam Bello
-3101~Chris Lee
-3102~Marko Vila
+1104~Alex Kobsa
+1105~Igor De Moraes
+1106~Theo Konstantopoulos
+1107~Connor Bourgeois
+1108~Ilyas Salhi
+1109~Cooper Ducharme
+1110~Matt St. Jean
+1111~Ethan Turett
+1112~Arden Carling
+1114~Reily Siegel
+1115~Steven Tran
+1116~Sam Presutti
+1117~Caleb Farwell
+1118~John Winship
+1119~Dylan Shanes
+1120~Sam Bello
+1121~Chris Lee
+1122~Marko Vila
